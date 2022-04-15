@@ -1,0 +1,6 @@
+"""A module for storing Twitch Client ID and Client Secret values
+
+Rename to twitch.py
+"""
+CLIENT_ID = 'YOUR CLIENT ID HERE'
+CLIENT_SECRET = 'YOUR CLIENT SECRET HERE'

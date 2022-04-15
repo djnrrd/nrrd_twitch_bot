@@ -14,7 +14,7 @@ def setup_logger(app: 'TwitchBotLogApp', debug: bool = False) -> logging.Logger:
     :return: A Logger object
     """
     # Create textLogger
-    text_handler = TkTextHandler(app.doc_log)
+    text_handler = TkTextHandler(app.bot_log)
     # Create a custom logger and add the Tk text handler
     logger = logging.getLogger('twitch_bot')
     if debug:

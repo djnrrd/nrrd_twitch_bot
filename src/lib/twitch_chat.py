@@ -1,10 +1,9 @@
 """"Module for connecting to the Twitch Websockets chat service
 """
-from typing import Optional, Type
+from typing import Optional, Type, Union
 from types import TracebackType
 from websockets import client
 from logging import Logger
-from datetime import datetime, timedelta
 
 
 class TwitchChat:
@@ -14,7 +13,7 @@ class TwitchChat:
     method invoked.
 
     async with TwitchChat(token, nick, channel, logger) as twitch:
-        twitch.run()
+        await twitch.run()
 
     :param oauth_token: OAuth2 token received from Twitch
     :param nickname: Twitch username
@@ -27,9 +26,9 @@ class TwitchChat:
         self.uri: str = 'wss://irc-ws.chat.twitch.tv:443'
         self.oauth_token = oauth_token
         self.nickname = nickname
-        self.channel = channel
+        self.channel = channel.lower()
         self.logger = logger
-        self._session: client.WebSocketClientProtocol = None
+        self._session: Union[client.WebSocketClientProtocol, None] = None
 
     def __enter__(self) -> None:
         """Should not be using with the normal context manager"""
@@ -55,12 +54,12 @@ class TwitchChat:
         """Exit point for the async context manager"""
         await self.close()
 
-    async def open(self) -> 'TwitchChat':
+    async def open(self) -> None:
         """Open a websockets client that's stored in the object"""
         if not self._session:
             self._session = await client.connect(self.uri, logger=self.logger)
-            await self.authentication()
-        return self
+            if not await self.authentication():
+                await self.close()
 
     async def close(self) -> None:
         """Close the  websockets client stored in the object"""
@@ -72,41 +71,61 @@ class TwitchChat:
             finally:
                 self._session = None
 
-    async def authentication(self) -> None:
+    async def authentication(self) -> Union[bool, None]:
         """Authenticate to the twitch chat service
         """
         if self._session:
             try:
                 await self._session.send(f"PASS oauth:{self.oauth_token}")
                 await self._session.send(f"NICK {self.nickname}")
-                await self._session.send(f"JOIN #{self.channel.lower()}")
+                result = await self._session.recv()
+                if 'Login authentication failed' in result:
+                    self.logger.error('Login authentication failed. Please '
+                                      'check Twitch settings and re-authorise '
+                                      'application')
+                    return None
+                await self._session.send(f"JOIN #{self.channel}")
                 await self._session.send('CAP REQ :twitch.tv/membership')
                 await self._session.send('CAP REQ :twitch.tv/tags')
                 await self._session.send('CAP REQ :twitch.tv/commands')
+                return True
             except BaseException as exception:
                 raise exception
 
     async def run(self) -> None:
         """Run the chat session
         """
-        start_time = datetime.now()
-        async for message in self._session:
-            # As well as the keep alive pings and pongs the websockets
-            # library manages for us, Twitch send a specific PING message
-            # periodically
-            if message.strip() == 'PING :tmi.twitch.tv':
-                await self._session.send('PONG :tmi.twitch.tv')
-            else:
-                await self._message_rcv(message)
-            message_time = datetime.now()
-            if message_time - start_time >= timedelta(minutes=2):
-                self.logger.info('Exiting run loop after time expired')
-                break
+        if self._session:
+            async for message in self._session:
+                # As well as the keep alive pings and pongs the websockets
+                # library manages for us, Twitch send a specific PING message
+                # periodically
+                if message.strip() == 'PING :tmi.twitch.tv':
+                    await self._session.send('PONG :tmi.twitch.tv')
+                elif f"PRIVMSG #{self.channel}" in message:
+                    await self._privmsg_rcv(message)
 
-    async def _message_rcv(self, message: str) -> None:
-        """Do something with the messages from the server
+    async def _privmsg_rcv(self, message: str) -> None:
+        """Do something with the channel messages from the server
 
-        :param message:
-        :return:
+        :param message: The message sent to the channel
         """
-        self.logger.info(f"Message received: '{message}'")
+        privmsg = {}
+        # Break the message into its parts, which should be colon separated.
+        parts = message.split(':')
+        # The tags should be in the first colon separated section, they'll be
+        # preceded by an @ symbol. We don't need that. Each tag is semi-colon
+        # separated
+        # https://dev.twitch.tv/docs/irc/tags#privmsg-twitch-tags
+        tags = parts[0][1:].split(';')
+        for tag in tags:
+            # Tags are in a key=value format, but may not have values
+            tag_parts = tag.split('=')
+            privmsg[tag_parts[0]] = tag_parts[1]
+        # The Display name is in the tags, so let's take the nickname from
+        # the prefix.
+        privmsg['nickname'] = parts[1].split('!')[0]
+        # Finally, the message, which may have had colons in it, so let's
+        # rejoin
+        privmsg['msg_text'] = ':'.join(parts[2:]).strip()
+        self.logger.info(f"Message : '{privmsg}'")

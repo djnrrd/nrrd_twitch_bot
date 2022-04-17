@@ -76,21 +76,28 @@ class TwitchChat:
         """
         if self._session:
             try:
-                await self._session.send(f"PASS oauth:{self.oauth_token}")
-                await self._session.send(f"NICK {self.nickname}")
+                await self.send(f"PASS oauth:{self.oauth_token}")
+                await self.send(f"NICK {self.nickname}")
                 result = await self._session.recv()
                 if 'Login authentication failed' in result:
                     self.logger.error('Login authentication failed. Please '
                                       'check Twitch settings and re-authorise '
                                       'application')
                     return None
-                await self._session.send(f"JOIN #{self.channel}")
-                await self._session.send('CAP REQ :twitch.tv/membership')
-                await self._session.send('CAP REQ :twitch.tv/tags')
-                await self._session.send('CAP REQ :twitch.tv/commands')
+                await self.send(f"JOIN #{self.channel}")
+                await self.send('CAP REQ :twitch.tv/membership')
+                await self.send('CAP REQ :twitch.tv/tags')
+                await self.send('CAP REQ :twitch.tv/commands')
                 return True
             except BaseException as exception:
                 raise exception
+
+    async def send(self, message: str) -> None:
+        """Send a message to the Twitch websockets server
+
+        :param message: The message to send
+        """
+        await self._session.send(message)
 
     async def run(self) -> None:
         """Run the chat session

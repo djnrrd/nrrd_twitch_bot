@@ -2,8 +2,8 @@
 """
 from typing import Optional, Type, Union
 from types import TracebackType
-from websockets import client
 from logging import Logger
+from websockets import client
 
 
 class TwitchChat:

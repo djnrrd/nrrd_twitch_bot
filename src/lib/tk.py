@@ -43,7 +43,8 @@ class LogFrame(tk.Frame):
     def _make_scrolled_txt(self) -> None:
         """Create the scrolled text area to be used for the log
         """
-        st = scrolledtext.ScrolledText(self, state='disabled',
-                                       name='bot_log_txt', bg='DarkGray')
-        st.configure(font='TkFixedFont')
-        st.grid(column=0, row=0, sticky='nsew')
+        scroll_txt = scrolledtext.ScrolledText(self, state='disabled',
+                                               name='bot_log_txt',
+                                               bg='DarkGray')
+        scroll_txt.configure(font='TkFixedFont')
+        scroll_txt.grid(column=0, row=0, sticky='nsew')

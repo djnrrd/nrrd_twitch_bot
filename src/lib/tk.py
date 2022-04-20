@@ -1,11 +1,13 @@
 """"The TK application for the Twitch bot log handler
 """
 from configparser import ConfigParser
+from logging import Logger
 import tkinter as tk
 from tkinter import font as tk_font
 from tkinter import scrolledtext
 from .logger import setup_logger
-from .config import load_config
+from .config import load_config, save_config
+from .twitch_oauth import get_twitch_oauth_token
 
 
 class TwitchBotLogApp(tk.Tk):
@@ -32,6 +34,7 @@ class TwitchBotLogApp(tk.Tk):
         # The widget creates a frame with a default name
         bot_log_path = 'log_frame.!frame.bot_log_txt'
         self.bot_log = self.nametowidget(bot_log_path)
+        # Start the logger
         self.logger = setup_logger(self, debug)
 
     def _build_menu(self) -> tk.Menu:
@@ -110,10 +113,11 @@ class OptionsWindow(tk.Toplevel):
 
         :param event: The Tkinter <<ListboxSelect>> event
         """
+        logger = self.master.logger
         idx = event.widget.curselection()
         option = event.widget.get(idx)
         if option == 'Twitch Login':
-            option_frame = TwitchLogin(self.options_action)
+            option_frame = TwitchLogin(logger, self.options_action)
         elif option == 'Test Option':
             option_frame = TestOption(self.options_action)
         else:
@@ -181,55 +185,80 @@ class TwitchLogin(tk.Frame):
     :param kwargs: List of keyword arguments for a Tk Frame
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, logger: Logger, *args, **kwargs) -> None:
         super().__init__(name='twitch_login', *args, **kwargs)
+        self.logger = logger
         # Variables for the form elements
         self.twitch_username = tk.StringVar()
         self.twitch_channel = tk.StringVar()
         self.oauth_token = tk.StringVar()
+        # Load values from config
+        self.config = self._load_config_values()
         # Setup grid
         self.grid_rowconfigure(0, weight=0)
         self.grid_rowconfigure(1, weight=1)
         self.grid_rowconfigure(2, weight=0)
         self.grid_rowconfigure(3, weight=0)
         self.grid_rowconfigure(4, weight=1)
+        self.grid_rowconfigure(5, weight=0)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
         self._build_form()
-        # Load values from config
 
     def _build_form(self) -> None:
         """Build the form for the options page
         """
-        heading_label = tk.Label(self, text='Twitch Login options',
-                                 font=('Helvetica', 12, 'bold'))
-        user_label = tk.Label(self, text='Twitch Username:')
-        user_box = tk.Entry(self, name='twitch_username',
-                            textvariable=self.twitch_username)
-        channel_label = tk.Label(self, text='Twitch channel:')
-        channel_box = tk.Entry(self, name='twitch_channel',
-                               textvariable=self.twitch_channel)
-        oauth_label = tk.Label(self, text='OAuth token:')
-        oauth_val_label = tk.Label(self, textvariable=self.oauth_token)
-        get_token_btn = tk.Button(self, text='Get new OAuth Token',
-                                  command=self.get_oauth_token,
-                                  name='get_oauth', state='normal')
+        self.heading_label = tk.Label(self, text='Twitch Login options',
+                                      font=('Helvetica', 12, 'bold'))
+        self.user_label = tk.Label(self, text='Twitch Username:')
+        self.user_box = tk.Entry(self, name='twitch_username',
+                                 textvariable=self.twitch_username)
+        self.channel_label = tk.Label(self, text='Twitch channel:')
+        self.channel_box = tk.Entry(self, name='twitch_channel',
+                                    textvariable=self.twitch_channel)
+        self.oauth_label = tk.Label(self, text='OAuth token:')
+        self.oauth_val_label = tk.Label(self, textvariable=self.oauth_token)
+        self.get_token_btn = tk.Button(self, text='Get new OAuth Token',
+                                       command=self.get_oauth_token,
+                                       name='get_oauth', state='normal')
+        self.save_config_btn = tk.Button(self, text='Save Config',
+                                         command=self._save_config_values,
+                                         name='save_config', state='normal')
         # Grid Layout
-        heading_label.grid(row=0, columnspan=2, sticky='ns')
-        user_label.grid(row=1, column=0, sticky='es', padx=5, pady=5)
-        user_box.grid(row=1, column=1, sticky='ws', padx=5, pady=5)
-        channel_label.grid(row=2, column=0, sticky='e', padx=5, pady=5)
-        channel_box.grid(row=2, column=1, sticky='w', padx=5, pady=5)
-        oauth_label.grid(row=3, column=0, sticky='ne', padx=5, pady=5)
-        oauth_val_label.grid(row=3, column=1, sticky='nw', padx=5, pady=5)
-        get_token_btn.grid(row=4, column=1, sticky='nw', padx=5, pady=5)
+        self.heading_label.grid(row=0, columnspan=2, sticky='ns', pady=5)
+        self.user_label.grid(row=1, column=0, sticky='es', padx=5, pady=5)
+        self.user_box.grid(row=1, column=1, sticky='ws', padx=5, pady=5)
+        self.channel_label.grid(row=2, column=0, sticky='e', padx=5, pady=5)
+        self.channel_box.grid(row=2, column=1, sticky='w', padx=5, pady=5)
+        self.oauth_label.grid(row=3, column=0, sticky='ne', padx=5, pady=5)
+        self.oauth_val_label.grid(row=3, column=1, sticky='nw', padx=5, pady=5)
+        self.get_token_btn.grid(row=4, column=1, sticky='nw', padx=5, pady=5)
+        self.save_config_btn.grid(row=5, column=1, sticky='se', padx=5, pady=5)
 
-    def get_oauth_token(self):
-        print('Let\'s go')
+    def get_oauth_token(self) -> None:
+        """Start the Twitch OAuth Token process
+        """
+        # Disable button
+        self.get_token_btn['state'] = 'disabled'
+        # Update token
+        get_twitch_oauth_token(self.oauth_token)
 
     def _load_config_values(self) -> ConfigParser:
-        # config = load_config()
-        pass
+        """Load the Twitch OAuth values from the config file
+        """
+        config = load_config(self.logger)
+        self.twitch_username.set(config['twitch']['username'])
+        self.twitch_channel.set(config['twitch']['channel'])
+        self.oauth_token.set(config['twitch']['oauth_token'])
+        return config
+
+    def _save_config_values(self) -> None:
+        """Save the Twitch OAuth values to the config file
+        """
+        self.config['twitch']['username'] = self.twitch_username.get()
+        self.config['twitch']['channel'] = self.twitch_channel.get()
+        self.config['twitch']['oauth_token'] = self.oauth_token.get()
+        save_config(self.config, self.logger)
 
 
 class TestOption(tk.Frame):

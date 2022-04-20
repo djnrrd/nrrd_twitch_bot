@@ -36,8 +36,9 @@ def config_defaults(config: ConfigParser, logger: Logger) -> ConfigParser:
     """
     logger.debug('Adding default values to config file')
     config.add_section('twitch')
-    config['twitch']['oauth_token'] = 'N/A'
+    config['twitch']['username'] = 'N/A'
     config['twitch']['channel'] = 'N/A'
+    config['twitch']['oauth_token'] = 'N/A'
     save_config(config, logger)
     return config
 

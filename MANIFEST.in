@@ -1,0 +1,3 @@
+include src/lib/static/*.html
+include src/lib/static/*.js
+include src/lib/static/*.css

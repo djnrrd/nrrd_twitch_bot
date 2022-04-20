@@ -61,6 +61,7 @@ def load_config(logger: Logger) -> ConfigParser:
         logger.debug(f"Config file {config_file} does not exist")
         config = config_defaults(config, logger)
     else:
+        logger.debug(f"Loading config file {config_file}")
         config.read(config_file)
     return config
 

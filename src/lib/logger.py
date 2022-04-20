@@ -18,7 +18,10 @@ def setup_logger(app: 'TwitchBotLogApp', debug: bool = False) -> logging.Logger:
     # Create a custom logger and add the Tk text handler
     logger = logging.getLogger('twitch_bot')
     if debug:
+        ch = logging.StreamHandler()
+        ch.setFormatter(logging.Formatter('%(levelname)s - %(message)s'))
         logger.setLevel(logging.DEBUG)
+        logger.addHandler(ch)
     else:
         logger.setLevel(logging.INFO)
     logger.addHandler(text_handler)

@@ -178,8 +178,48 @@ class TwitchLogin(tk.Frame):
     """
 
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(name='twitch_login', background='blue', *args,
-                         **kwargs)
+        super().__init__(name='twitch_login', *args, **kwargs)
+        # Variables for the form elements
+        self.twitch_username = tk.StringVar()
+        self.twitch_channel = tk.StringVar()
+        self.oauth_token = tk.StringVar()
+        # Setup grid
+        self.grid_rowconfigure(0, weight=0)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=0)
+        self.grid_rowconfigure(3, weight=0)
+        self.grid_rowconfigure(4, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self._build_options()
+
+    def _build_options(self):
+        heading_label = tk.Label(self, text='Twitch Login options',
+                                 font=('Helvetica', 12, 'bold'))
+        user_label = tk.Label(self, text='Twitch Username:')
+        user_box = tk.Entry(self, name='twitch_username',
+                            textvariable=self.twitch_username)
+        channel_label = tk.Label(self, text='Twitch channel:')
+        channel_box = tk.Entry(self, name='twitch_channel',
+                               textvariable=self.twitch_channel)
+        oauth_label = tk.Label(self, text='OAuth token:')
+        oauth_val_label = tk.Label(self, textvariable=self.oauth_token)
+        get_token_btn = tk.Button(self, text='Get new OAuth Token',
+                                  command=self.get_oauth_token,
+                                  name='get_oauth', state='normal')
+        # Grid Layout
+        heading_label.grid(row=0, columnspan=2, sticky='ns')
+        user_label.grid(row=1, column=0, sticky='es', padx=5, pady=5)
+        user_box.grid(row=1, column=1, sticky='ws', padx=5, pady=5)
+        channel_label.grid(row=2, column=0, sticky='e', padx=5, pady=5)
+        channel_box.grid(row=2, column=1, sticky='w', padx=5, pady=5)
+        oauth_label.grid(row=3, column=0, sticky='ne', padx=5, pady=5)
+        oauth_val_label.grid(row=3, column=1, sticky='nw', padx=5, pady=5)
+        get_token_btn.grid(row=4, column=1, sticky='nw', padx=5, pady=5)
+
+    def get_oauth_token(self):
+        print('Let\'s go')
+
 
 
 class TestOption(tk.Frame):

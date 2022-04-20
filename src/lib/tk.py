@@ -1,8 +1,11 @@
 """"The TK application for the Twitch bot log handler
 """
+from configparser import ConfigParser
 import tkinter as tk
 from tkinter import font as tk_font
 from tkinter import scrolledtext
+from .logger import setup_logger
+from .config import load_config
 
 
 class TwitchBotLogApp(tk.Tk):
@@ -10,8 +13,8 @@ class TwitchBotLogApp(tk.Tk):
 
     :param kwargs: List of keyword arguments for a Tk applications
     """
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, debug: bool = False, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         # Main App Setup
         self.title('Twitch Bot Log')
         self.title_font = tk_font.Font(family='Helvetica', size=18,
@@ -29,6 +32,7 @@ class TwitchBotLogApp(tk.Tk):
         # The widget creates a frame with a default name
         bot_log_path = 'log_frame.!frame.bot_log_txt'
         self.bot_log = self.nametowidget(bot_log_path)
+        self.logger = setup_logger(self, debug)
 
     def _build_menu(self) -> tk.Menu:
         """Build the main application menu
@@ -191,9 +195,12 @@ class TwitchLogin(tk.Frame):
         self.grid_rowconfigure(4, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
-        self._build_options()
+        self._build_form()
+        # Load values from config
 
-    def _build_options(self):
+    def _build_form(self) -> None:
+        """Build the form for the options page
+        """
         heading_label = tk.Label(self, text='Twitch Login options',
                                  font=('Helvetica', 12, 'bold'))
         user_label = tk.Label(self, text='Twitch Username:')
@@ -220,6 +227,9 @@ class TwitchLogin(tk.Frame):
     def get_oauth_token(self):
         print('Let\'s go')
 
+    def _load_config_values(self) -> ConfigParser:
+        # config = load_config()
+        pass
 
 
 class TestOption(tk.Frame):

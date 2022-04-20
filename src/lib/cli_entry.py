@@ -21,8 +21,7 @@ def main() -> None:
     """
     parser = _add_args()
     arg = parser.parse_args()
-    app = TwitchBotLogApp()
-    logger = setup_logger(app, arg.debug)
+    app = TwitchBotLogApp(arg.debug)
     app.mainloop()
 
 

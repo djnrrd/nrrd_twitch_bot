@@ -2,7 +2,6 @@
 """
 import argparse
 from .tk import TwitchBotLogApp
-from .logger import setup_logger
 
 
 def _add_args() -> argparse.ArgumentParser:

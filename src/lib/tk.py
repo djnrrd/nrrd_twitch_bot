@@ -72,6 +72,10 @@ class TwitchBotLogApp(tk.Tk):
         """
         self.logger.debug('Shutting down app')
         self.message_queue.put_nowait('SHUTDOWN')
+        while self.loop.is_running():
+            self.update()
+        self.logger.debug('Loop no longer running')
+        self.destroy()
 
 
 class LogFrame(tk.Frame):

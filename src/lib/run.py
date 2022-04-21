@@ -25,8 +25,8 @@ async def message_handler(chat: TwitchChat, logger: Logger,
         if message == 'SHUTDOWN':
             logger.debug('Shutdown message received')
             loop.call_soon(asyncio.create_task, chat.close())
-            message_queue.task_done()
             q_loop = False
+        message_queue.task_done()
     logger.debug('Exiting message handler')
 
 

@@ -33,7 +33,7 @@ async def message_handler(chat: TwitchChat, logger: Logger,
 async def async_twitch_chat_main(oauth_token: str, nickname: str, channel: str,
                                  logger: Logger,
                                  loop: asyncio.AbstractEventLoop,
-                                 message_queue: asyncio.Queue,) -> None:
+                                 message_queue: asyncio.Queue) -> None:
     """Run the Twitch Chat websockets client
 
     :param oauth_token: The OAuth token to log into Twitch
@@ -70,10 +70,9 @@ def twitch_chat_main(logger: Logger, loop: asyncio.AbstractEventLoop,
     logger.debug('Ending loop')
 
 
-def run_threads(logger: Logger, loop: asyncio.AbstractEventLoop,
+def run_sockets(logger: Logger, loop: asyncio.AbstractEventLoop,
                 message_queue: asyncio.Queue) -> None:
-    """Create the threads and queues to run the websocket clients and servers
-    in
+    """Create the threads to run the websocket clients and servers in
 
     :param logger: A Logger object
     :param loop: The asyncio event loop
@@ -83,4 +82,3 @@ def run_threads(logger: Logger, loop: asyncio.AbstractEventLoop,
     logger.debug('Starting thread for websockets')
     chat = threading.Thread(target=start_chat, daemon=True)
     chat.start()
-

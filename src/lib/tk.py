@@ -9,15 +9,16 @@ from tkinter import scrolledtext
 from .logger import setup_logger
 from .config import load_config, save_config
 from .twitch_oauth import get_twitch_oauth_token
-from .run import run_threads
+from .run import run_sockets
 
 
 class TwitchBotLogApp(tk.Tk):
     """The main app window for the Twitch bot log
 
+    :param debug: If the logger should run in debug mode
     :param kwargs: List of keyword arguments for a Tk applications
     """
-    def __init__(self, debug: bool = False, *args, **kwargs) -> None:
+    def __init__(self, debug: bool, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         # Main App Setup
         self.title('Twitch Bot Log')
@@ -32,6 +33,7 @@ class TwitchBotLogApp(tk.Tk):
         self.main_frame = LogFrame(self)
         self.main_frame.grid(row=0, column=0, sticky='nsew')
         # Menu bar setup
+        self.websockets = tk.BooleanVar(value=True)
         self.menu_bar = self._build_menu()
         self.config(menu=self.menu_bar)
         # Set a top level reference to the scrolling text widget
@@ -54,6 +56,12 @@ class TwitchBotLogApp(tk.Tk):
         file_menu.add_command(label="Options...", command=self.launch_options)
         file_menu.add_command(label="Exit", command=self.close_app)
         menu_bar.add_cascade(label="File", menu=file_menu)
+        run_menu = tk.Menu(menu_bar, tearoff=0)
+        run_menu.add_checkbutton(label="Start/Stop Websockets",
+                                 command=self.start_stop_sockets,
+                                 variable=self.websockets, onvalue=1,
+                                 offvalue=0)
+        menu_bar.add_cascade(label="Run", menu=run_menu)
         return menu_bar
 
     def launch_options(self) -> None:
@@ -61,20 +69,36 @@ class TwitchBotLogApp(tk.Tk):
         """
         OptionsWindow(self)
 
+    def start_stop_sockets(self) -> None:
+        """Toggle running the Websockets clients and servers via the Run menu
+        """
+        # The function is called AFTER the variable is set by the menu
+        # checkbutton, so this looks ass backwards
+        if self.websockets.get():
+            self.launch_sockets()
+        else:
+            self.shutdown_sockets()
+
     def launch_sockets(self) -> None:
         """Launch the websocket clients and servers in a thread
         """
-        run_threads(self.logger, self.loop, self.message_queue)
+        self.logger.info('Starting up Websockets')
+        run_sockets(self.logger, self.loop, self.message_queue)
+
+    def shutdown_sockets(self) -> None:
+        """Gracefully shutdown the websocket clients and servers
+        """
+        self.logger.info('Shutting down Websockets')
+        self.message_queue.put_nowait('SHUTDOWN')
+        while self.loop.is_running():
+            self.update()
+        self.logger.debug('self.loop no longer running')
 
     def close_app(self) -> None:
         """Gracefully shutdown the websocket clients and servers before
         closing the tkinter app
         """
-        self.logger.debug('Shutting down app')
-        self.message_queue.put_nowait('SHUTDOWN')
-        while self.loop.is_running():
-            self.update()
-        self.logger.debug('Loop no longer running')
+        self.shutdown_sockets()
         self.destroy()
 
 

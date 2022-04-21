@@ -56,15 +56,19 @@ class TwitchChat:
 
     async def open(self) -> None:
         """Open a websockets client that's stored in the object"""
+        self.logger.debug('TwitchChat Open called')
         if not self._session:
+            self.logger.debug('Starting session')
             self._session = await client.connect(self.uri, logger=self.logger)
             if not await self.authentication():
                 await self.close()
 
     async def close(self) -> None:
         """Close the  websockets client stored in the object"""
+        self.logger.debug('TwitchChat Close called')
         if self._session:
             try:
+                self.logger.debug('Attempting to close session')
                 await self._session.close()
             except BaseException as exception:
                 raise exception

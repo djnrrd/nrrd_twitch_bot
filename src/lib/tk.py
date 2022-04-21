@@ -2,12 +2,14 @@
 """
 from configparser import ConfigParser
 from logging import Logger
+import asyncio
 import tkinter as tk
 from tkinter import font as tk_font
 from tkinter import scrolledtext
 from .logger import setup_logger
 from .config import load_config, save_config
 from .twitch_oauth import get_twitch_oauth_token
+from .run import run_threads
 
 
 class TwitchBotLogApp(tk.Tk):
@@ -22,6 +24,8 @@ class TwitchBotLogApp(tk.Tk):
         self.title_font = tk_font.Font(family='Helvetica', size=18,
                                        weight='bold', slant='italic')
         self.geometry('800x360')
+        # Make the X button run something other that destroy()
+        self.protocol('WM_DELETE_WINDOW', self.close_app)
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         # Main frame setup
@@ -36,6 +40,9 @@ class TwitchBotLogApp(tk.Tk):
         self.bot_log = self.nametowidget(bot_log_path)
         # Start the logger
         self.logger = setup_logger(self, debug)
+        # Create the asyncio event loop and message queue
+        self.loop = asyncio.new_event_loop()
+        self.message_queue = asyncio.Queue(loop=self.loop)
 
     def _build_menu(self) -> tk.Menu:
         """Build the main application menu
@@ -45,7 +52,7 @@ class TwitchBotLogApp(tk.Tk):
         menu_bar = tk.Menu(self)
         file_menu = tk.Menu(menu_bar, tearoff=0)
         file_menu.add_command(label="Options...", command=self.launch_options)
-        file_menu.add_command(label="Exit", command=self.quit)
+        file_menu.add_command(label="Exit", command=self.close_app)
         menu_bar.add_cascade(label="File", menu=file_menu)
         return menu_bar
 
@@ -53,6 +60,18 @@ class TwitchBotLogApp(tk.Tk):
         """Launch the options window
         """
         OptionsWindow(self)
+
+    def launch_sockets(self) -> None:
+        """Launch the websocket clients and servers in a thread
+        """
+        run_threads(self.logger, self.loop, self.message_queue)
+
+    def close_app(self) -> None:
+        """Gracefully shutdown the websocket clients and servers before
+        closing the tkinter app
+        """
+        self.logger.debug('Shutting down app')
+        self.message_queue.put_nowait('SHUTDOWN')
 
 
 class LogFrame(tk.Frame):

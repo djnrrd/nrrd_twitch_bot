@@ -50,6 +50,7 @@ class TkTextHandler(logging.Handler):
         def append() -> None:
             """Nested function to call in the program loop
             """
+            msg = self.format(record)
             self.tk_widget.configure(state='normal')
             if record.levelname in ('INFO', 'DEBUG'):
                 self.tk_widget.insert(END, f"{record.levelname}", 'green_level')
@@ -58,7 +59,7 @@ class TkTextHandler(logging.Handler):
             self.tk_widget.insert(END, f" - "
                                        f"{datetime.now().strftime('%H:%M:%S')}"
                                        f" - ", 'time')
-            self.tk_widget.insert(END, f"{record.msg}\n", 'message')
+            self.tk_widget.insert(END, f"{msg}\n", 'message')
 
             self.tk_widget.tag_config('green_level', foreground='green')
             self.tk_widget.tag_config('red_level', foreground='red')

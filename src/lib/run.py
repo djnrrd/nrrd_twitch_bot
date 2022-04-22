@@ -6,14 +6,17 @@ from logging import Logger
 import asyncio
 from .twitch_chat import TwitchChat
 from .config import load_config
+from .dispatcher import BotDispatcher
 
 
-async def shutdown_handler(chat: TwitchChat, logger: Logger,
+async def shutdown_handler(chat: TwitchChat, dispatcher: BotDispatcher,
+                           logger: Logger,
                            loop: asyncio.AbstractEventLoop,
                            shutdown_queue: asyncio.Queue, ) -> None:
     """Read the Queue for messages and route them to the appropriate objects
 
     :param chat: The TwitchChat object
+    :param dispatcher: The BotDispatcher object
     :param logger: A logger object
     :param loop: The asyncio event loop
     :param shutdown_queue: A python queue object for handling shutdowns from
@@ -24,7 +27,8 @@ async def shutdown_handler(chat: TwitchChat, logger: Logger,
     while q_loop:
         message = await shutdown_queue.get()
         if message == 'SHUTDOWN':
-            logger.debug('Shutdown message received')
+            logger.debug('Shutdown handler message received')
+            loop.call_soon(asyncio.create_task, dispatcher.shutdown())
             loop.call_soon(asyncio.create_task, chat.close())
             q_loop = False
         shutdown_queue.task_done()
@@ -45,11 +49,14 @@ async def async_twitch_chat_main(oauth_token: str, nickname: str, channel: str,
     :param shutdown_queue: A python queue object for handling shutdowns from
         the TK thread
     """
-    async with TwitchChat(oauth_token, nickname, channel, logger) as chat:
-        logger.debug('Using asyncio gather to run chatbot and queue manager')
-        futures = [chat.run(),
-                   shutdown_handler(chat, logger, loop, shutdown_queue)]
-        await asyncio.gather(*futures)
+    chat_queue = asyncio.PriorityQueue()
+    chat = TwitchChat(oauth_token, nickname, channel, logger, chat_queue)
+    await chat.open()
+    dispatcher = BotDispatcher(chat, chat_queue, logger)
+    logger.debug('Using asyncio gather to run chatbot and queue manager')
+    futures = [chat.run(), dispatcher.run(),
+               shutdown_handler(chat, dispatcher, logger, loop, shutdown_queue)]
+    await asyncio.gather(*futures)
     logger.debug('Exiting TwitchChat and message handler')
 
 

@@ -1,7 +1,8 @@
 """"Module for connecting to the Twitch Websockets chat service
 """
-from typing import Optional, Type, Union
+from typing import Optional, Type, Union, List
 from types import TracebackType
+from asyncio import PriorityQueue
 from logging import Logger
 from websockets import client
 
@@ -22,13 +23,14 @@ class TwitchChat:
     """
 
     def __init__(self, oauth_token: str, nickname: str, channel: str,
-                 logger: Logger) -> None:
+                 logger: Logger, dispatch_queue: PriorityQueue) -> None:
         self.uri: str = 'wss://irc-ws.chat.twitch.tv:443'
         self.oauth_token = oauth_token
         self.nickname = nickname
         self.channel = channel.lower()
         self.logger = logger
         self._session: Union[client.WebSocketClientProtocol, None] = None
+        self.dispatch_queue = dispatch_queue
 
     def __enter__(self) -> None:
         """Should not be using with the normal context manager"""
@@ -60,7 +62,7 @@ class TwitchChat:
         if not self._session:
             self.logger.debug('Starting session')
             self._session = await client.connect(self.uri, logger=self.logger)
-            if not await self.authentication():
+            if not await self._login():
                 await self.close()
 
     async def close(self) -> None:
@@ -75,26 +77,69 @@ class TwitchChat:
             finally:
                 self._session = None
 
-    async def authentication(self) -> Union[bool, None]:
-        """Authenticate to the twitch chat service
+    async def _login(self) -> Union[bool, None]:
+        """Log into the twitch chat service, request the appropriate features
+        and join the requested channel
+
+        :return: True if everything went OK.
         """
-        if self._session:
-            try:
-                await self.send(f"PASS oauth:{self.oauth_token}")
-                await self.send(f"NICK {self.nickname}")
-                result = await self._session.recv()
-                if 'Login authentication failed' in result:
-                    self.logger.error('Login authentication failed. Please '
-                                      'check Twitch settings and re-authorise '
-                                      'application')
-                    return None
-                await self.send(f"JOIN #{self.channel}")
-                await self.send('CAP REQ :twitch.tv/membership')
-                await self.send('CAP REQ :twitch.tv/tags')
-                await self.send('CAP REQ :twitch.tv/commands')
-                return True
-            except BaseException as exception:
-                raise exception
+        if not await self._authentication():
+            return None
+        if not await self._request_features():
+            return None
+        if not await self._join_channel():
+            return None
+        return True
+
+    async def _authentication(self) -> Union[bool, None]:
+        """Authenticate to the twitch chat service
+
+        :return: True if authenticated.
+        """
+        await self.send(f"PASS oauth:{self.oauth_token}")
+        await self.send(f"NICK {self.nickname}")
+        result = await self._session.recv()
+        self.logger.debug(f"Login: {result}")
+        if 'Login authentication failed' in result:
+            self.logger.error(f"Login authentication failed: {result}")
+            self.logger.error('Please check Twitch settings and re-authorise '
+                              'application')
+            return None
+        return True
+
+    async def _request_features(self) -> Union[bool, None]:
+        """Request the IRC features of Twitch Chat
+
+        :return: True if all features were acknowledged
+        """
+        await self.send('CAP REQ :twitch.tv/membership')
+        result = await self._session.recv()
+        self.logger.debug(f"Req Membership: {result}")
+        if 'ACK :twitch.tv/membership' not in result:
+            return None
+        await self.send('CAP REQ :twitch.tv/tags')
+        result = await self._session.recv()
+        self.logger.debug(f"Req Tags: {result}")
+        if 'ACK :twitch.tv/tags' not in result:
+            return None
+        await self.send('CAP REQ :twitch.tv/commands')
+        result = await self._session.recv()
+        self.logger.debug(f"Req commands: {result}")
+        if 'ACK :twitch.tv/commands' not in result:
+            return None
+        return True
+
+    async def _join_channel(self) -> Union[bool, None]:
+        """Join the requested channel
+
+        :return: True if the JOIN was successful
+        """
+        await self.send(f"JOIN #{self.channel}")
+        result = await self._session.recv()
+        self.logger.debug(f"Join: {result}")
+        if f"JOIN #{self.channel}" not in result:
+            return None
+        return True
 
     async def send(self, message: str) -> None:
         """Send a message to the Twitch websockets server
@@ -107,36 +152,11 @@ class TwitchChat:
         """Run the chat session
         """
         if self._session:
-            async for message in self._session:
-                # As well as the keep alive pings and pongs the websockets
-                # library manages for us, Twitch send a specific PING message
-                # periodically
-                if message.strip() == 'PING :tmi.twitch.tv':
-                    await self._session.send('PONG :tmi.twitch.tv')
-                elif f"PRIVMSG #{self.channel}" in message:
-                    await self._privmsg_rcv(message)
-
-    async def _privmsg_rcv(self, message: str) -> None:
-        """Do something with the channel messages from the server
-
-        :param message: The message sent to the channel
-        """
-        privmsg = {}
-        # Break the message into its parts, which should be colon separated.
-        parts = message.split(':')
-        # The tags should be in the first colon separated section, they'll be
-        # preceded by an @ symbol. We don't need that. Each tag is semi-colon
-        # separated
-        # https://dev.twitch.tv/docs/irc/tags#privmsg-twitch-tags
-        tags = parts[0][1:].split(';')
-        for tag in tags:
-            # Tags are in a key=value format, but may not have values
-            tag_parts = tag.split('=')
-            privmsg[tag_parts[0]] = tag_parts[1]
-        # The Display name is in the tags, so let's take the nickname from
-        # the prefix.
-        privmsg['nickname'] = parts[1].split('!')[0]
-        # Finally, the message, which may have had colons in it, so let's
-        # rejoin
-        privmsg['msg_text'] = ':'.join(parts[2:]).strip()
-        self.logger.info(f"Message : '{privmsg}'")
+            async for frame in self._session:
+                # Messages may be multiline, split with '\r\n' and always have
+                # '\r\n' at the end of the message
+                frame = frame.strip()
+                messages = frame.split('\r\n')
+                for message in messages:
+                    self.logger.debug(f"Run: {message}")
+                    await self.dispatch_queue.put((0, message))

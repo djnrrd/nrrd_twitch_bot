@@ -20,6 +20,21 @@ class TwitchBotLogApp(tk.Tk):
     """
     def __init__(self, debug: bool, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        # This custom property is required for the TK app setup
+        self.websockets = tk.BooleanVar(value=True)
+        # Setup the TK app
+        self._setup_app()
+        # Shortcut to the log widget
+        self.bot_log = self.nametowidget('log_frame.!frame.bot_log_txt')
+        # Start the logger
+        self.logger = setup_logger(self, debug)
+        # Create the asyncio event loop and shutdown message queue
+        self.loop = asyncio.new_event_loop()
+        self.shutdown_queue = asyncio.Queue(loop=self.loop)
+
+    def _setup_app(self) -> None:
+        """Setup the TK application and widgets
+        """
         # Main App Setup
         self.title('Twitch Bot Log')
         self.title_font = tk_font.Font(family='Helvetica', size=18,
@@ -27,24 +42,14 @@ class TwitchBotLogApp(tk.Tk):
         self.geometry('800x360')
         # Make the X button run something other that destroy()
         self.protocol('WM_DELETE_WINDOW', self.close_app)
+        # App grid setup
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         # Main frame setup
-        self.main_frame = LogFrame(self)
-        self.main_frame.grid(row=0, column=0, sticky='nsew')
+        main_frame = LogFrame(self)
+        main_frame.grid(row=0, column=0, sticky='nsew')
         # Menu bar setup
-        self.websockets = tk.BooleanVar(value=True)
-        self.menu_bar = self._build_menu()
-        self.config(menu=self.menu_bar)
-        # Set a top level reference to the scrolling text widget
-        # The widget creates a frame with a default name
-        bot_log_path = 'log_frame.!frame.bot_log_txt'
-        self.bot_log = self.nametowidget(bot_log_path)
-        # Start the logger
-        self.logger = setup_logger(self, debug)
-        # Create the asyncio event loop and message queue
-        self.loop = asyncio.new_event_loop()
-        self.message_queue = asyncio.Queue(loop=self.loop)
+        self.config(menu=self._build_menu())
 
     def _build_menu(self) -> tk.Menu:
         """Build the main application menu
@@ -83,13 +88,13 @@ class TwitchBotLogApp(tk.Tk):
         """Launch the websocket clients and servers in a thread
         """
         self.logger.info('Starting up Websockets')
-        run_sockets(self.logger, self.loop, self.message_queue)
+        run_sockets(self.logger, self.loop, self.shutdown_queue)
 
     def shutdown_sockets(self) -> None:
         """Gracefully shutdown the websocket clients and servers
         """
         self.logger.info('Shutting down Websockets')
-        self.message_queue.put_nowait('SHUTDOWN')
+        self.shutdown_queue.put_nowait('SHUTDOWN')
         while self.loop.is_running():
             self.update()
         self.logger.debug('self.loop no longer running')
@@ -110,6 +115,11 @@ class LogFrame(tk.Frame):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(name='log_frame', *args, **kwargs)
+        self._setup_app()
+
+    def _setup_app(self) -> None:
+        """Setup the TK application and widgets
+        """
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self._make_scrolled_txt()
@@ -132,7 +142,17 @@ class OptionsWindow(tk.Toplevel):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(name='options', *args, **kwargs)
-        # Main App Setup
+        self._setup_app()
+        # Paths to widgets
+        self.options_list = \
+            self.nametowidget('options_frame.options_list.option_list_lbx')
+        self.options_action = \
+            self.nametowidget('options_frame.options_action')
+        self._load_options_list()
+
+    def _setup_app(self) -> None:
+        """Setup the TK application and widgets
+        """
         self.title('Twitch Bot Log - Options')
         self.title_font = tk_font.Font(family='Helvetica', size=18,
                                        weight='bold', slant='italic')
@@ -140,14 +160,8 @@ class OptionsWindow(tk.Toplevel):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         # Main frame setup
-        self.main_frame = OptionsFrame(self)
-        self.main_frame.grid(row=0, column=0, sticky='nsew')
-        # Paths to widgets
-        options_list_path = 'options_frame.options_list.option_list_lbx'
-        self.options_list = self.nametowidget(options_list_path)
-        options_action_path = 'options_frame.options_action'
-        self.options_action = self.nametowidget(options_action_path)
-        self._load_options_list()
+        main_frame = OptionsFrame(self)
+        main_frame.grid(row=0, column=0, sticky='nsew')
 
     def _load_options_list(self) -> None:
         """Load the options categories in the list box
@@ -180,6 +194,11 @@ class OptionsFrame(tk.Frame):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(name='options_frame', *args, **kwargs)
+        self._setup_app()
+
+    def _setup_app(self) -> None:
+        """Setup the TK application and widgets
+        """
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=9)
@@ -197,10 +216,15 @@ class OptionsList(tk.Frame):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(name='options_list', *args, **kwargs)
+        self._setup_app()
+        self._make_list_box()
+
+    def _setup_app(self) -> None:
+        """Setup the TK application and widgets
+        """
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1)
-        self._make_list_box()
 
     def _make_list_box(self) -> None:
         """Create the scrolling list box
@@ -222,6 +246,11 @@ class OptionsActions(tk.Frame):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(name='options_action', *args, **kwargs)
+        self._setup_app()
+
+    def _setup_app(self) -> None:
+        """Setup the TK application and widgets
+        """
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
@@ -242,6 +271,12 @@ class TwitchLogin(tk.Frame):
         # Load values from config
         self.config = self._load_config_values()
         # Setup grid
+        self._setup_app()
+        self._build_form()
+
+    def _setup_app(self) -> None:
+        """Setup the TK application and widgets
+        """
         self.grid_rowconfigure(0, weight=0)
         self.grid_rowconfigure(1, weight=1)
         self.grid_rowconfigure(2, weight=0)
@@ -250,7 +285,6 @@ class TwitchLogin(tk.Frame):
         self.grid_rowconfigure(5, weight=0)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
-        self._build_form()
 
     def _build_form(self) -> None:
         """Build the form for the options page
@@ -315,5 +349,5 @@ class TestOption(tk.Frame):
     """
 
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(name='twitch_login', background='red', *args,
+        super().__init__(name='test_option', background='red', *args,
                          **kwargs)

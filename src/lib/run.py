@@ -52,7 +52,7 @@ async def async_twitch_chat_main(oauth_token: str, nickname: str, channel: str,
     chat_queue = asyncio.PriorityQueue()
     chat = TwitchChat(oauth_token, nickname, channel, logger, chat_queue)
     await chat.open()
-    dispatcher = BotDispatcher(chat, chat_queue, logger)
+    dispatcher = BotDispatcher(chat, ['chat_overlay'], chat_queue, logger)
     logger.debug('Using asyncio gather to run chatbot and queue manager')
     futures = [chat.run(), dispatcher.run(),
                shutdown_handler(chat, dispatcher, logger, loop, shutdown_queue)]

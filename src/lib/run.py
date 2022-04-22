@@ -49,12 +49,16 @@ async def async_twitch_chat_main(oauth_token: str, nickname: str, channel: str,
     :param shutdown_queue: A python queue object for handling shutdowns from
         the TK thread
     """
-    chat_queue = asyncio.PriorityQueue()
-    chat = TwitchChat(oauth_token, nickname, channel, logger, chat_queue)
+    chat_rcv_queue = asyncio.PriorityQueue()
+    chat_send_queue = asyncio.PriorityQueue()
+    chat = TwitchChat(oauth_token, nickname, channel, logger, chat_rcv_queue)
     await chat.open()
-    dispatcher = BotDispatcher(chat, ['chat_overlay'], chat_queue, logger)
+    dispatcher = BotDispatcher(chat, ['chat_overlay', 'chat_commands'],
+                               chat_rcv_queue, chat_send_queue, logger)
     logger.debug('Using asyncio gather to run chatbot and queue manager')
-    futures = [chat.run(), dispatcher.run(),
+    futures = [chat.run(),
+               dispatcher.chat_receive(),
+               dispatcher.chat_send(),
                shutdown_handler(chat, dispatcher, logger, loop, shutdown_queue)]
     await asyncio.gather(*futures)
     logger.debug('Exiting TwitchChat and message handler')

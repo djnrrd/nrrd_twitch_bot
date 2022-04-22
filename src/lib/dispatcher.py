@@ -18,15 +18,19 @@ class BotDispatcher:
 
     :param chat: The TwitchChat object
     :param plugins: The list of plugins to load into the dispatcher
-    :param chat_queue: The Asyncio Queue to receive the messages from the
+    :param chat_rcv_queue: The Asyncio Queue to receive the messages from the
+        TwitchChat object
+    :param chat_send_queue: The Asyncio Queue to send messages to the
         TwitchChat object
     :param logger: A logger object
     """
     def __init__(self, chat: TwitchChat, plugins: List[str],
-                 chat_queue: PriorityQueue, logger: Logger) -> None:
+                 chat_rcv_queue: PriorityQueue, chat_send_queue: PriorityQueue,
+                 logger: Logger) -> None:
         self.chat = chat
         self.plugins = self._load_plugins(plugins)
-        self.chat_queue = chat_queue
+        self.chat_rcv_queue = chat_rcv_queue
+        self.chat_send_queue = chat_send_queue
         self.logger = logger
         self._process_queue: bool = True
 
@@ -51,14 +55,15 @@ class BotDispatcher:
         """
         self.logger.debug('Dispatcher received shutdown')
         self._process_queue = False
-        # Make sure we're not stuck waiting on the queue
-        await self.chat_queue.put((0, 'SHUTDOWN'))
+        # Make sure we're not stuck waiting on the queues
+        await self.chat_rcv_queue.put((0, 'SHUTDOWN'))
+        await self.chat_send_queue.put((0, 'Shutting down Bot'))
 
-    async def run(self) -> None:
+    async def chat_receive(self) -> None:
         """Read messages from the chat queue and dispatch them to plugins
         """
         while self._process_queue:
-            message = await self.chat_queue.get()
+            message = await self.chat_rcv_queue.get()
             # It's a priority queue, so get just the message
             message = message[1]
             self.logger.debug(f"Dispatcher: {message}")
@@ -69,7 +74,18 @@ class BotDispatcher:
                 await self.chat.send('PONG :tmi.twitch.tv')
             elif f"PRIVMSG #{self.chat.channel}" in message:
                 await self._send_privmsg(message)
-            self.chat_queue.task_done()
+            self.chat_rcv_queue.task_done()
+
+    async def chat_send(self) -> None:
+        """Send messages back to Twitch chat
+        """
+        while self._process_queue:
+            message = await self.chat_send_queue.get()
+            # It's a priority queue, so send just the message
+            message = message[1]
+            chat_command = f"PRIVMSG #{self.chat.channel} :{message}"
+            await self.chat.send(chat_command)
+            self.chat_send_queue.task_done()
 
     async def _send_privmsg(self, message: str) -> None:
         """Send the private messages to all the plugins that implement
@@ -80,7 +96,9 @@ class BotDispatcher:
         futures = []
         for plugin in self.plugins:
             if hasattr(plugin, 'do_privmsg'):
-                futures.append(plugin.do_privmsg(message, self.logger))
+                futures.append(plugin.do_privmsg(message,
+                                                 self.chat_send_queue,
+                                                 self.logger))
         await asyncio.gather(*futures)
 
     @staticmethod
@@ -91,12 +109,15 @@ class BotDispatcher:
         :return: The inner wrapper function
         """
         @wraps(func)
-        async def inner_wrapper(msg: str, logger: Logger) -> None:
+        async def inner_wrapper(msg: str, chat_send_queue: PriorityQueue,
+                                logger: Logger) -> None:
             """Extract the tags and message from the raw privmsg received
             from the websockets client, convert them to a Dictionary and pass
             the dictionary and logger to the decorated functions
 
             :param msg: The raw message as received from the websockets queue
+            :param chat_send_queue: The queue object to send messages back to
+                TwitchChat
             :param logger: a logger object
             """
             privmsg = {}
@@ -117,6 +138,6 @@ class BotDispatcher:
             # Finally, the message, which may have had colons in it, so let's
             # rejoin
             privmsg['msg_text'] = ':'.join(parts[2:]).strip()
-            logger.info(f"do_privmsg: '{privmsg}'")
-            await func(privmsg, logger)
+            logger.debug(f"do_privmsg: '{privmsg}'")
+            await func(privmsg, chat_send_queue, logger)
         return inner_wrapper

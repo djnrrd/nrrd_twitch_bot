@@ -9,7 +9,7 @@ from tkinter import scrolledtext
 from .logger import setup_logger
 from .config import load_config, save_config
 from .twitch_oauth import get_twitch_oauth_token
-from .run import run_sockets
+from nrrd_twitch_bot.run import run_sockets
 
 
 class TwitchBotLogApp(tk.Tk):

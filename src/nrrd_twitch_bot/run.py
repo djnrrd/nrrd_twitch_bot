@@ -4,9 +4,9 @@ import threading
 from functools import partial
 from logging import Logger
 import asyncio
-from .twitch_chat import TwitchChat
-from .config import load_config
-from .dispatcher import BotDispatcher
+from nrrd_twitch_bot.lib.twitch_chat import TwitchChat
+from nrrd_twitch_bot.lib.config import load_config
+from nrrd_twitch_bot.lib.dispatcher import BotDispatcher
 
 
 async def shutdown_handler(chat: TwitchChat, dispatcher: BotDispatcher,

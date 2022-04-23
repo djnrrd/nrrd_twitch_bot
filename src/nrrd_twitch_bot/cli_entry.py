@@ -1,7 +1,7 @@
 """Entry point for the application
 """
 import argparse
-from .tk import TwitchBotLogApp
+from .lib.tk import TwitchBotLogApp
 
 
 def _add_args() -> argparse.ArgumentParser:

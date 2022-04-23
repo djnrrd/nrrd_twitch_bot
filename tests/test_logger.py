@@ -2,8 +2,8 @@ from unittest import TestCase
 import _tkinter
 from logging import Logger, DEBUG, INFO
 from datetime import datetime
-from lib.tk import TwitchBotLogApp
-from lib.logger import setup_logger
+from nrrd_twitch_bot.lib.tk import TwitchBotLogApp
+from nrrd_twitch_bot.lib.logger import setup_logger
 
 
 class TestTwitchBotLoggerDebug(TestCase):

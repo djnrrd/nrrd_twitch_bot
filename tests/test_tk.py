@@ -1,5 +1,5 @@
 from unittest import TestCase
-from lib.tk import TwitchBotLogApp
+from nrrd_twitch_bot.lib.tk import TwitchBotLogApp
 from tkinter import Text
 
 

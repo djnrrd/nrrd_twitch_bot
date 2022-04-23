@@ -2,7 +2,7 @@ from unittest import TestCase
 import os
 import logging
 from appdirs import user_config_dir
-from lib.config import load_config, save_config, check_config_dir
+from nrrd_twitch_bot.lib.config import load_config, check_config_dir
 
 APP_DIR = 'nrrd-twitch-bot'
 AUTHOR_DIR = 'djnrrd'

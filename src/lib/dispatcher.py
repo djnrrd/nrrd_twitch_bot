@@ -2,15 +2,11 @@
 """
 import asyncio
 from typing import List, Callable, Any
-from types import ModuleType
 from logging import Logger
-import importlib
-import os
-import sys
 from asyncio import PriorityQueue
 from functools import wraps
 from .twitch_chat import TwitchChat
-
+from .plugins import load_dispatchers
 
 class BotDispatcher:
     """Dispatch messages between the Twitch websockets client, plugins
@@ -24,31 +20,14 @@ class BotDispatcher:
         TwitchChat object
     :param logger: A logger object
     """
-    def __init__(self, chat: TwitchChat, plugins: List[str],
-                 chat_rcv_queue: PriorityQueue, chat_send_queue: PriorityQueue,
-                 logger: Logger) -> None:
+    def __init__(self, chat: TwitchChat, chat_rcv_queue: PriorityQueue,
+                 chat_send_queue: PriorityQueue, logger: Logger) -> None:
         self.chat = chat
-        self.plugins = self._load_plugins(plugins)
         self.chat_rcv_queue = chat_rcv_queue
         self.chat_send_queue = chat_send_queue
         self.logger = logger
+        self.plugins = load_dispatchers(self.logger)
         self._process_queue: bool = True
-
-    @staticmethod
-    def _load_plugins(plugins: List) -> List[ModuleType]:
-        """Import dispatcher plugin objects
-
-        :param plugins: the list of plugins to import
-        :return: A list of imported dispatcher modules from the list of plugins
-        """
-        local_plugin_path = os.path.join(os.path.dirname(__file__), '..',
-                                         'plugins')
-        sys.path.extend([local_plugin_path])
-        ret_list = []
-        for plugin in plugins:
-            if importlib.util.find_spec('.dispatcher', plugin):
-                ret_list.append(importlib.import_module('.dispatcher', plugin))
-        return ret_list
 
     async def shutdown(self) -> None:
         """Shutdown the dispatcher

@@ -8,7 +8,7 @@ import webbrowser
 from functools import partial
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlencode
-from conf.twitch import CLIENT_ID
+from nrrd_twitch_bot.conf.twitch import CLIENT_ID
 
 
 def get_twitch_oauth_token(oauth_label: tk.StringVar) -> None:

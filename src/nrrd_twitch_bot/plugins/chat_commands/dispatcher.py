@@ -3,7 +3,7 @@
 from typing import Dict
 from logging import Logger
 from asyncio import PriorityQueue
-from lib.dispatcher import BotDispatcher
+from nrrd_twitch_bot.lib.dispatcher import BotDispatcher
 
 
 @BotDispatcher.do_privmsg

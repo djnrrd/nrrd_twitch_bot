@@ -39,6 +39,8 @@ def config_defaults(config: ConfigParser, logger: Logger) -> ConfigParser:
     config['twitch']['username'] = 'N/A'
     config['twitch']['channel'] = 'N/A'
     config['twitch']['oauth_token'] = 'N/A'
+    config.add_section('plugins')
+    config['plugins']['plugins'] = 'chat_commands:chat_overlay'
     save_config(config, logger)
     return config
 

@@ -1,7 +1,9 @@
+"""chat_commands plugin dispatcher module
+"""
 from typing import Dict
 from logging import Logger
-from lib.dispatcher import BotDispatcher
 from asyncio import PriorityQueue
+from lib.dispatcher import BotDispatcher
 
 
 @BotDispatcher.do_privmsg
@@ -25,6 +27,11 @@ async def do_privmsg(msg: Dict, send_queue: PriorityQueue, logger: Logger) \
 
 
 def chat_commands(command: str):
+    """Return the response to the chat commands
+
+    :param command: the extracted command
+    :return: the command response
+    """
     commands = {'oar': 'Hit him with an oar!',
                 'catbutt': 'DJ Has cas and a web camera. How did you think '
                            'this would end?'}

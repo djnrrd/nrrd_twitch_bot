@@ -1,3 +1,5 @@
+"""Load plugins from the config file and import them
+"""
 from typing import List
 from types import ModuleType
 from logging import Logger

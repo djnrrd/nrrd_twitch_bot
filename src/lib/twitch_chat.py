@@ -1,6 +1,6 @@
 """"Module for connecting to the Twitch Websockets chat service
 """
-from typing import Optional, Type, Union, List
+from typing import Optional, Type, Union
 from types import TracebackType
 from asyncio import PriorityQueue
 from logging import Logger

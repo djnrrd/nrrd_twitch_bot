@@ -1,7 +1,9 @@
+"""chat overlay plugin dispatcher module
+"""
 from typing import Dict
 from logging import Logger
-from lib.dispatcher import BotDispatcher
 from asyncio import PriorityQueue
+from lib.dispatcher import BotDispatcher
 
 
 @BotDispatcher.do_privmsg

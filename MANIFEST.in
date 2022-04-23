@@ -1,3 +1,5 @@
-include src/lib/static/*.html
-include src/lib/static/*.js
-include src/lib/static/*.css
+include src/nrrd_twitch_bot/lib/static/*.html
+include src/nrrd_twitch_bot/lib/static/*.js
+include src/nrrd_twitch_bot/lib/static/*.css
+include src/nrrd_twitch_bot/plugins/chat_commands/*
+include src/nrrd_twitch_bot/plugins/chat_overlay/*

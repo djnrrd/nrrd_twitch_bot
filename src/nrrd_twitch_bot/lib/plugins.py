@@ -6,6 +6,7 @@ from logging import Logger
 import os
 import sys
 import importlib
+import importlib.util
 from appdirs import user_data_dir
 from .config import load_config
 

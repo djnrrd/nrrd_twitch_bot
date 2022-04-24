@@ -7,11 +7,11 @@ from aiohttp.web import TCPSite
 import asyncio
 from nrrd_twitch_bot.lib.twitch_chat import TwitchChat
 from nrrd_twitch_bot.lib.config import load_config
-from nrrd_twitch_bot.lib.dispatcher import BotDispatcher
+from nrrd_twitch_bot.lib.dispatcher import Dispatcher
 from nrrd_twitch_bot.lib import http_server
 
 
-async def shutdown_handler(chat: TwitchChat, dispatcher: BotDispatcher,
+async def shutdown_handler(chat: TwitchChat, dispatcher: Dispatcher,
                            site: TCPSite, logger: Logger,
                            loop: asyncio.AbstractEventLoop,
                            shutdown_queue: asyncio.PriorityQueue) -> None:
@@ -62,7 +62,7 @@ async def async_main(oauth_token: str, nickname: str, channel: str,
     chat = TwitchChat(oauth_token, nickname, channel, logger, chat_rcv_queue)
     await chat.open()
     # Initialise the dispatcher
-    dispatcher = BotDispatcher(chat, chat_rcv_queue, chat_send_queue, logger)
+    dispatcher = Dispatcher(chat, chat_rcv_queue, chat_send_queue, logger)
     # Initialise the HTTP server
     http_site = await http_server.main(logger)
     logger.debug('Using asyncio gather to run tasks')

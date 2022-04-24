@@ -8,7 +8,8 @@ from functools import wraps
 from .twitch_chat import TwitchChat
 from .plugins import load_dispatchers
 
-class BotDispatcher:
+
+class Dispatcher:
     """Dispatch messages between the Twitch websockets client, plugins
     and the websockets server
 

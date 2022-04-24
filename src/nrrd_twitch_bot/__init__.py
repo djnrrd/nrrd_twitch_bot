@@ -1,1 +1,1 @@
-from .lib.dispatcher import BotDispatcher
+from .lib.dispatcher import Dispatcher

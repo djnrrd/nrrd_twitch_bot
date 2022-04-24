@@ -3,10 +3,10 @@
 from typing import Dict
 from logging import Logger
 from asyncio import PriorityQueue
-from nrrd_twitch_bot import BotDispatcher
+from nrrd_twitch_bot import Dispatcher
 
 
-@BotDispatcher.do_privmsg
+@Dispatcher.do_privmsg
 async def do_privmsg(msg: Dict, send_queue: PriorityQueue, logger: Logger) \
         -> None:
     """Look for chat commands and return the responses

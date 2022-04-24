@@ -73,3 +73,12 @@ def load_dispatchers(logger: Logger) -> List[ModuleType]:
     """
     logger.debug('Loading dispatcher plugin modules')
     return _load_plugins('.dispatcher', logger)
+
+
+def load_overlays(logger: Logger) -> List[ModuleType]:
+    """Load the plugins and return those that want to use the dispatcher
+
+    :return: A list of dispatcher plugins
+    """
+    logger.debug('Loading overlay plugin modules')
+    return _load_plugins('.overlay', logger)

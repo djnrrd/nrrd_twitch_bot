@@ -32,7 +32,7 @@ class BotDispatcher:
     async def shutdown(self) -> None:
         """Shutdown the dispatcher
         """
-        self.logger.debug('Dispatcher received shutdown')
+        self.logger.info('Shutting down both Dispatcher queues')
         self._process_queue = False
         # Make sure we're not stuck waiting on the queues
         await self.chat_rcv_queue.put((0, 'SHUTDOWN'))
@@ -41,6 +41,7 @@ class BotDispatcher:
     async def chat_receive(self) -> None:
         """Read messages from the chat queue and dispatch them to plugins
         """
+        self.logger.info('Starting Dispatcher receive queue')
         while self._process_queue:
             message = await self.chat_rcv_queue.get()
             # It's a priority queue, so get just the message
@@ -58,6 +59,7 @@ class BotDispatcher:
     async def chat_send(self) -> None:
         """Send messages back to Twitch chat
         """
+        self.logger.info('Starting Dispatcher send queue')
         while self._process_queue:
             message = await self.chat_send_queue.get()
             # It's a priority queue, so send just the message

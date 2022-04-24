@@ -9,7 +9,7 @@ from tkinter import scrolledtext
 from .logger import setup_logger
 from .config import load_config, save_config
 from .twitch_oauth import get_twitch_oauth_token
-from nrrd_twitch_bot.run import run_sockets
+from nrrd_twitch_bot.run import start_new_thread
 
 
 class TwitchBotLogApp(tk.Tk):
@@ -30,7 +30,7 @@ class TwitchBotLogApp(tk.Tk):
         self.logger = setup_logger(self, debug)
         # Create the asyncio event loop and shutdown message queue
         self.loop = asyncio.new_event_loop()
-        self.shutdown_queue = asyncio.Queue(loop=self.loop)
+        self.shutdown_queue = asyncio.PriorityQueue(loop=self.loop)
 
     def _setup_app(self) -> None:
         """Setup the TK application and widgets
@@ -87,14 +87,14 @@ class TwitchBotLogApp(tk.Tk):
     def launch_sockets(self) -> None:
         """Launch the websocket clients and servers in a thread
         """
-        self.logger.info('Starting up Websockets')
-        run_sockets(self.logger, self.loop, self.shutdown_queue)
+        self.logger.debug('Starting up Asyncio thread')
+        start_new_thread(self.logger, self.loop, self.shutdown_queue)
 
     def shutdown_sockets(self) -> None:
         """Gracefully shutdown the websocket clients and servers
         """
-        self.logger.info('Shutting down Websockets')
-        self.shutdown_queue.put_nowait('SHUTDOWN')
+        self.logger.debug('Shutting down Asyncio thread')
+        self.shutdown_queue.put_nowait((0, 'SHUTDOWN'))
         while self.loop.is_running():
             self.update()
         self.logger.debug('self.loop no longer running')

@@ -3,3 +3,5 @@ pylint
 basewebapi
 appdirs
 websockets
+aiohttp
+setuptools

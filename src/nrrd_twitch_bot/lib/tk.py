@@ -30,7 +30,7 @@ class TwitchBotLogApp(tk.Tk):
         self.logger = setup_logger(self, debug)
         # Create the asyncio event loop and shutdown message queue
         self.loop = asyncio.new_event_loop()
-        self.shutdown_queue = asyncio.PriorityQueue(loop=self.loop)
+        self.shutdown_queue = asyncio.PriorityQueue()
 
     def _setup_app(self) -> None:
         """Setup the TK application and widgets

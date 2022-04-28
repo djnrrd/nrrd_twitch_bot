@@ -10,7 +10,7 @@ class TestTwitchBotLogApp(TestCase):
         self.app.mainloop()
 
     def setUp(self):
-        self.app = TwitchBotLogApp()
+        self.app = TwitchBotLogApp(False)
         self._start_app()
 
     def tearDown(self):

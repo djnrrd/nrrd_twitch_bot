@@ -3,7 +3,6 @@ import _tkinter
 from logging import Logger, DEBUG, INFO
 from datetime import datetime
 from nrrd_twitch_bot.lib.tk import TwitchBotLogApp
-from nrrd_twitch_bot.lib.logger import setup_logger
 
 
 class TestTwitchBotLoggerDebug(TestCase):
@@ -13,9 +12,9 @@ class TestTwitchBotLoggerDebug(TestCase):
         self.app.mainloop()
 
     def setUp(self):
-        self.app = TwitchBotLogApp()
+        self.app = TwitchBotLogApp(True)
         self.pump_events()
-        self.logger = setup_logger(self.app, debug=True)
+        self.logger = self.app.logger
         self._start_app()
 
     def tearDown(self):
@@ -57,9 +56,9 @@ class TestTwitchBotLoggerInfo(TestCase):
         self.app.mainloop()
 
     def setUp(self):
-        self.app = TwitchBotLogApp()
+        self.app = TwitchBotLogApp(False)
         self.pump_events()
-        self.logger = setup_logger(self.app)
+        self.logger = self.app.logger
         self._start_app()
 
     def tearDown(self):

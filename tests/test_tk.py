@@ -1,6 +1,8 @@
 from unittest import TestCase
 from nrrd_twitch_bot.lib.tk import TwitchBotLogApp
 from tkinter import Text
+from logging import Logger
+from asyncio import PriorityQueue, AbstractEventLoop
 
 
 class TestTwitchBotLogApp(TestCase):
@@ -23,3 +25,12 @@ class TestTwitchBotLogApp(TestCase):
 
     def test_log_txt(self):
         self.assertIsInstance(self.app.bot_log, Text)
+
+    def test_logger(self):
+        self.assertIsInstance(self.app.logger, Logger)
+
+    def test_loop(self):
+        self.assertIsInstance(self.app.loop, AbstractEventLoop)
+
+    def test_queue(self):
+        self.assertIsInstance(self.app.shutdown_queue, PriorityQueue)

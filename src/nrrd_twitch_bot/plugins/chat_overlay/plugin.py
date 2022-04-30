@@ -13,15 +13,14 @@ class ChatOverlay(BasePlugin):
 
         :param msg: Websockets privmsg dictionary, with all tags as Key/Value
             pairs, plus the 'nickname' key, and the 'msg_text' key
-        :param send_queue: The queue object to send messages back to TwitchChat
-        :param logger: A Logger object
         """
         self.logger.debug(f"chat_overlay plugin: {msg}")
 
-    async def handler(self, request: Request) \
+    async def http_handler(self, request: Request) \
             -> Union[Response, FileResponse, StreamResponse]:
         base_path = os.path.join(os.path.dirname(__file__), 'static')
-        if request.match_info['path'] == '' or request.match_info['path'] == '/' \
+        if request.match_info['path'] == '' \
+                or request.match_info['path'] == '/' \
                 or request.match_info['path'] == 'index.html':
             return FileResponse(path=os.path.join(base_path, 'thanks.html'))
         elif request.match_info['path'] == 'thanks.js':

@@ -3,24 +3,38 @@
 from typing import List
 from logging import Logger
 from aiohttp import web
-from .plugins import load_overlays
+from nrrd_twitch_bot.lib.plugins import BasePlugin
 
 
-def route_plugins(logger: Logger) -> List[web.RouteDef]:
-    plugins = load_overlays(logger)
-    # Use the plugin package name as the path
-    return [web.get(f"/{x.__name__.split('.')[0]}/{{path:.*}}", x.handler)
-            for x in plugins]
+def route_plugins(plugins: List[BasePlugin], logger: Logger) \
+        -> List[web.RouteDef]:
+    """Create the routes
+
+    :param plugins: A list of plugins
+    :param logger: A logger object
+    :return:
+    """
+    ret_list = []
+    for plugin in plugins:
+        if hasattr(plugin, 'http_handler'):
+            # Use the plugin package name as the path
+            package = plugin.__module__.split('.')[0]
+            logger.debug(f"Adding route for package {package} to HTTP server")
+            ret_list.append(web.get(f"/{package}/{{path:.*}}",
+                                    plugin.http_handler))
+    return ret_list
 
 
-async def main(logger: Logger) -> web.TCPSite:
+async def run_http_server(plugins: List[BasePlugin], logger: Logger) \
+        -> web.TCPSite:
     """Start a simple aiohttp server and return it
 
+    :param plugins: A list of plugins
     :param logger: A logger object
     :return: The web server for shutting down externally
     """
     app = web.Application()
-    plugin_routes = route_plugins(logger)
+    plugin_routes = route_plugins(plugins, logger)
     app.add_routes(plugin_routes)
     runner = web.AppRunner(app)
     await runner.setup()

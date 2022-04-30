@@ -6,7 +6,7 @@ from logging import Logger
 from asyncio import PriorityQueue
 from functools import wraps
 from .twitch_chat import TwitchChat
-from .plugins import load_dispatchers
+from .plugins import BasePlugin
 
 
 class Dispatcher:
@@ -22,12 +22,13 @@ class Dispatcher:
     :param logger: A logger object
     """
     def __init__(self, chat: TwitchChat, chat_rcv_queue: PriorityQueue,
-                 chat_send_queue: PriorityQueue, logger: Logger) -> None:
+                 chat_send_queue: PriorityQueue, plugins: List[BasePlugin],
+                 logger: Logger) -> None:
         self.chat = chat
         self.chat_rcv_queue = chat_rcv_queue
         self.chat_send_queue = chat_send_queue
         self.logger = logger
-        self.plugins = load_dispatchers(self.logger)
+        self.plugins = plugins
         self._process_queue: bool = True
 
     async def shutdown(self) -> None:
@@ -78,9 +79,7 @@ class Dispatcher:
         futures = []
         for plugin in self.plugins:
             if hasattr(plugin, 'do_privmsg'):
-                futures.append(plugin.do_privmsg(message,
-                                                 self.chat_send_queue,
-                                                 self.logger))
+                futures.append(plugin.do_privmsg(message))
         await asyncio.gather(*futures)
 
     @staticmethod
@@ -91,16 +90,13 @@ class Dispatcher:
         :return: The inner wrapper function
         """
         @wraps(func)
-        async def inner_wrapper(msg: str, chat_send_queue: PriorityQueue,
-                                logger: Logger) -> None:
+        async def inner_wrapper(obj: BasePlugin, msg: str) -> None:
             """Extract the tags and message from the raw privmsg received
             from the websockets client, convert them to a Dictionary and pass
             the dictionary and logger to the decorated functions
 
+            :param obj: The plugin object
             :param msg: The raw message as received from the websockets queue
-            :param chat_send_queue: The queue object to send messages back to
-                TwitchChat
-            :param logger: a logger object
             """
             privmsg = {}
             # Break the message into its parts, which should be colon separated.
@@ -120,6 +116,6 @@ class Dispatcher:
             # Finally, the message, which may have had colons in it, so let's
             # rejoin
             privmsg['msg_text'] = ':'.join(parts[2:]).strip()
-            logger.debug(f"do_privmsg: '{privmsg}'")
-            await func(privmsg, chat_send_queue, logger)
+            obj.logger.debug(f"do_privmsg: '{privmsg}'")
+            await func(obj, privmsg)
         return inner_wrapper

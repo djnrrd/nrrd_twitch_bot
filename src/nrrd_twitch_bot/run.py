@@ -8,11 +8,11 @@ import asyncio
 from nrrd_twitch_bot.lib.twitch_chat import TwitchChat
 from nrrd_twitch_bot.lib.config import load_config
 from nrrd_twitch_bot.lib.dispatcher import Dispatcher
-from nrrd_twitch_bot.lib import http_server
+from nrrd_twitch_bot.lib.plugins import load_plugins
 
 
 async def shutdown_handler(chat: TwitchChat, dispatcher: Dispatcher,
-                           site: TCPSite, logger: Logger,
+                           logger: Logger,
                            loop: asyncio.AbstractEventLoop,
                            shutdown_queue: asyncio.PriorityQueue) -> None:
     """Read the Shutdown Queue waiting for the shutdown message and shutdown
@@ -32,8 +32,8 @@ async def shutdown_handler(chat: TwitchChat, dispatcher: Dispatcher,
         message = await shutdown_queue.get()
         if message[1] == 'SHUTDOWN':
             logger.debug('Shutdown handler message received')
-            logger.info('Shutting down local HTTP Server')
-            await site.stop()
+            # logger.info('Shutting down local HTTP Server')
+            # await site.stop()
             loop.call_soon(asyncio.create_task, dispatcher.shutdown())
             loop.call_soon(asyncio.create_task, chat.close())
             q_loop = False
@@ -61,15 +61,18 @@ async def async_main(oauth_token: str, nickname: str, channel: str,
     # Load twitch chat web sockets client and open the connection
     chat = TwitchChat(oauth_token, nickname, channel, logger, chat_rcv_queue)
     await chat.open()
+    # Gather the plugins
+    plugins = load_plugins(chat_send_queue, logger)
     # Initialise the dispatcher
-    dispatcher = Dispatcher(chat, chat_rcv_queue, chat_send_queue, logger)
+    dispatcher = Dispatcher(chat, chat_rcv_queue, chat_send_queue,
+                            plugins, logger)
     # Initialise the HTTP server
-    http_site = await http_server.main(logger)
+    # http_site = await http_server.main(logger)
     logger.debug('Using asyncio gather to run tasks')
     futures = [chat.run(),
                dispatcher.chat_receive(),
                dispatcher.chat_send(),
-               shutdown_handler(chat, dispatcher, http_site, logger, loop,
+               shutdown_handler(chat, dispatcher, logger, loop,
                                 shutdown_queue)]
     await asyncio.gather(*futures)
     logger.debug('Exiting tasks')

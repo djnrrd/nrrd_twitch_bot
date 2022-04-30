@@ -1,14 +1,22 @@
 """Load plugins from the config file and import them
 """
 from typing import List
-from types import ModuleType
+from asyncio import PriorityQueue
 from logging import Logger
+from inspect import getmembers, isclass
 import os
 import sys
 import importlib
 import importlib.util
 from appdirs import user_data_dir
 from .config import load_config
+
+
+class BasePlugin:
+
+    def __init__(self, send_queue: PriorityQueue, logger: Logger) -> None:
+        self.send_queue = send_queue
+        self.logger = logger
 
 
 def _load_from_config(logger: Logger) -> List[str]:
@@ -51,34 +59,24 @@ def _update_paths(logger: Logger) -> None:
     sys.path.extend([local_plugin_path, user_plugin_path])
 
 
-def _load_plugins(plugin_module: str, logger: Logger) -> List[ModuleType]:
+def load_plugins(send_queue: PriorityQueue, logger: Logger) -> List[BasePlugin]:
     """load all plugin objects
 
+    :param send_queue: An asyncio priority queue object
     :param logger: A logger object
-    :return: A list of imported packages from the list of plugins
+    :return: A list of initiated of plugins
     """
     _update_paths(logger)
-    plugins = _load_from_config(logger)
-    logger.debug(f"Importing plugin libraries supporting {plugin_module}")
-    modules = [importlib.import_module(plugin_module, x) for x in plugins
-               if importlib.util.find_spec(plugin_module, x)]
-    logger.debug(f"Loaded modules {[str(x) for x in modules]}")
-    return modules
-
-
-def load_dispatchers(logger: Logger) -> List[ModuleType]:
-    """Load the plugins and return those that want to use the dispatcher
-
-    :return: A list of dispatcher plugins
-    """
-    logger.debug('Loading dispatcher plugin modules')
-    return _load_plugins('.dispatcher', logger)
-
-
-def load_overlays(logger: Logger) -> List[ModuleType]:
-    """Load the plugins and return those that want to use the dispatcher
-
-    :return: A list of dispatcher plugins
-    """
-    logger.debug('Loading overlay plugin modules')
-    return _load_plugins('.overlay', logger)
+    modules = _load_from_config(logger)
+    logger.debug('Importing plugin libraries')
+    plugins = []
+    for module in modules:
+        if importlib.util.find_spec('.plugin', module):
+            load_module = importlib.import_module('.plugin', module)
+            logger.debug(f"Imported {str(load_module)} from {module}")
+            for cls in getmembers(load_module, isclass):
+                if cls[1].__module__ == load_module.__name__:
+                    logger.debug(f"Initialising plugin {cls[0]} "
+                                 f"from {load_module}")
+                    plugins.append(cls[1](send_queue, logger))
+    return plugins

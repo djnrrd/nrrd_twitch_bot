@@ -16,12 +16,17 @@ def route_plugins(plugins: List[BasePlugin], logger: Logger) \
     """
     ret_list = []
     for plugin in plugins:
+        # Use the plugin package name as the path
+        package = plugin.__module__.split('.')[0]
         if hasattr(plugin, 'http_handler'):
-            # Use the plugin package name as the path
-            package = plugin.__module__.split('.')[0]
             logger.debug(f"Adding route for package {package} to HTTP server")
-            ret_list.append(web.get(f"/{package}/{{path:.*}}",
+            ret_list.append(web.get(f"/{package}/http/{{path:.*}}",
                                     plugin.http_handler))
+        if hasattr(plugin, 'websocket_handler'):
+            logger.debug(f"Adding route for package {package} to WebSockets "
+                         f"server")
+            ret_list.append(web.get(f"/{package}/ws/",
+                                    plugin.websocket_handler))
     return ret_list
 
 

@@ -13,10 +13,23 @@ from .config import load_config
 
 
 class BasePlugin:
+    """Basic object that plugins must inherit from, providing a logger and
+    queues
 
-    def __init__(self, send_queue: PriorityQueue, logger: Logger) -> None:
-        self.send_queue = send_queue
+    :param send_chat_queue: The asyncio queue object for sending to chat
+    :param logger: A logger object
+    """
+    def __init__(self, send_chat_queue: PriorityQueue, logger: Logger) -> None:
+        self.send_chat_queue = send_chat_queue
+        self.websocket_queue = PriorityQueue()
         self.logger = logger
+
+    async def send_chat(self, message: str) -> None:
+        """Send a chat message back to the dispatcher
+
+        :param message: The text to send to chat
+        """
+        await self.send_chat_queue.put(message)
 
 
 def _load_from_config(logger: Logger) -> List[str]:

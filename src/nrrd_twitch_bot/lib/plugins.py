@@ -30,14 +30,14 @@ class BasePlugin:
 
         :param message: The text to send to chat
         """
-        await self.send_chat_queue.put(message)
+        await self.send_chat_queue.put((0, message))
 
     async def send_web_socket(self, message: Union[List, Dict, str, bytes]):
         """Send a message to the Websockets server for overlays
 
         :param message: The message to send to the websockets
         """
-        await self.websocket_queue.put(message)
+        await self.websocket_queue.put((0, message))
 
     async def _websocket_handler(self, request: Request) -> WebSocketResponse:
         """A websocket handler to send messages to Overlays

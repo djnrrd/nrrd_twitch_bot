@@ -87,17 +87,17 @@ class TwitchBotLogApp(tk.Tk):
     def launch_sockets(self) -> None:
         """Launch the websocket clients and servers in a thread
         """
-        self.logger.debug('Starting up Asyncio thread')
+        self.logger.debug('tk.py: Starting up Asyncio thread')
         start_new_thread(self.logger, self.loop, self.shutdown_queue)
 
     def shutdown_sockets(self) -> None:
         """Gracefully shutdown the websocket clients and servers
         """
-        self.logger.debug('Shutting down Asyncio thread')
+        self.logger.debug('tk.py: Shutting down Asyncio thread')
         self.shutdown_queue.put_nowait((0, 'SHUTDOWN'))
         while self.loop.is_running():
             self.update()
-        self.logger.debug('self.loop no longer running')
+        self.logger.debug('tk.py: self.loop no longer running')
 
     def close_app(self) -> None:
         """Gracefully shutdown the websocket clients and servers before

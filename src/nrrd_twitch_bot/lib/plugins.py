@@ -1,8 +1,9 @@
 """Load plugins from the config file and import them
 """
 from typing import List
-from asyncio import PriorityQueue
+from asyncio import PriorityQueue, create_task
 from logging import Logger
+from aiohttp.web import Request, WebSocketResponse
 from inspect import getmembers, isclass
 import os
 import sys
@@ -30,6 +31,28 @@ class BasePlugin:
         :param message: The text to send to chat
         """
         await self.send_chat_queue.put(message)
+
+    async def _websocket_handler(self, request: Request) -> WebSocketResponse:
+        """A websocket handler to send messages to Overlays
+
+                :param request: An aiohttp Request object
+                :return: The WebSocket response
+                """
+        ws = WebSocketResponse()
+        await ws.prepare(request)
+        task = create_task(self._send_from_queue(ws))
+        try:
+            async for msg in ws:
+                pass
+        finally:
+            task.cancel()
+        return ws
+
+    async def _send_from_queue(self, ws):
+        while not ws.closed:
+            message = await self.websocket_queue.get()
+            await ws.send_str(message)
+            self.websocket_queue.task_done()
 
 
 def _load_from_config(logger: Logger) -> List[str]:

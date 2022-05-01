@@ -37,14 +37,4 @@ class ChatOverlay(BasePlugin):
                                 headers=header)
 
     async def websocket_handler(self, request: Request) -> WebSocketResponse:
-        """A websocket handler to send messages to Overlays
-
-        :param request: An aiohttp Request object
-        :return: The WebSocket response
-        """
-        ws = WebSocketResponse()
-        await ws.prepare(request)
-        while not ws.closed:
-            message = await self.websocket_queue.get()
-            await ws.send_str(message)
-        return ws
+        return await self._websocket_handler(request)

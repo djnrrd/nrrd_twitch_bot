@@ -32,7 +32,11 @@ def route_plugins(plugins: List[BasePlugin], logger: Logger) \
     return ret_list
 
 
-async def on_shutdown(app):
+async def on_shutdown(app: web.Application) -> None:
+    """Gracefully shutdown websocket sessions
+
+    :param app: The aiohttp web application
+    """
     for ws in set(app['websockets']):
         await ws.close(code=WSCloseCode.GOING_AWAY,
                        message='Server shutdown')

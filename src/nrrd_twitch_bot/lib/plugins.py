@@ -3,12 +3,12 @@
 from typing import List
 from asyncio import PriorityQueue, create_task
 from logging import Logger
-from aiohttp.web import Request, WebSocketResponse
 from inspect import getmembers, isclass
 import os
 import sys
 import importlib
 import importlib.util
+from aiohttp.web import Request, WebSocketResponse
 from appdirs import user_data_dir
 from .config import load_config
 

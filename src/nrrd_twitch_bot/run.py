@@ -3,8 +3,8 @@
 import threading
 from functools import partial
 from logging import Logger
-from aiohttp.web import TCPSite
 from asyncio import create_task, PriorityQueue, AbstractEventLoop, gather
+from aiohttp.web import TCPSite
 from nrrd_twitch_bot.lib.twitch_chat import TwitchChat
 from nrrd_twitch_bot.lib.config import load_config
 from nrrd_twitch_bot.lib.dispatcher import Dispatcher

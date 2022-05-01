@@ -6,9 +6,9 @@ import asyncio
 import tkinter as tk
 from tkinter import font as tk_font
 from tkinter import scrolledtext
-from .logger import setup_logger
-from .config import load_config, save_config
-from .twitch_oauth import get_twitch_oauth_token
+from nrrd_twitch_bot.lib.logger import setup_logger
+from nrrd_twitch_bot.lib.config import load_config, save_config
+from nrrd_twitch_bot.lib.twitch_oauth import get_twitch_oauth_token
 from nrrd_twitch_bot.run import start_new_thread
 
 

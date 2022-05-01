@@ -1,13 +1,17 @@
+"""An example plugin to provide an OBS chat overlay
+"""
 from typing import Dict
 from typing import Union
-from aiohttp.web import Request, Response, FileResponse, StreamResponse, \
-    WebSocketResponse
 import os
 import json
+from aiohttp.web import Request, Response, FileResponse, StreamResponse, \
+    WebSocketResponse
 from nrrd_twitch_bot import Dispatcher, BasePlugin
 
 
 class ChatOverlay(BasePlugin):
+    """An OBS Overlay for twitch chat
+    """
 
     @Dispatcher.do_privmsg
     async def do_privmsg(self, message: Dict) -> None:
@@ -31,10 +35,15 @@ class ChatOverlay(BasePlugin):
                 or request.match_info['path'] == '/' \
                 or request.match_info['path'] == 'index.html':
             return FileResponse(path=os.path.join(base_path, 'thanks.html'))
-        elif request.match_info['path'] == 'thanks.js':
+        if request.match_info['path'] == 'thanks.js':
             header = {'Content-type': 'application/ecmascript'}
             return FileResponse(path=os.path.join(base_path, 'thanks.js'),
                                 headers=header)
 
     async def websocket_handler(self, request: Request) -> WebSocketResponse:
+        """Create a websocket instance for the plugin
+
+        :param request: An aiohttp Request object
+        :return: The WebSocket response
+        """
         return await self._websocket_handler(request)

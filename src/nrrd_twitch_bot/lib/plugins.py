@@ -1,6 +1,6 @@
 """Load plugins from the config file and import them
 """
-from typing import List
+from typing import List, Dict, Union
 from asyncio import PriorityQueue, create_task
 from logging import Logger
 from inspect import getmembers, isclass
@@ -32,12 +32,19 @@ class BasePlugin:
         """
         await self.send_chat_queue.put(message)
 
+    async def send_web_socket(self, message: Union[List, Dict, str, bytes]):
+        """Send a message to the Websockets server for overlays
+
+        :param message: The message to send to the websockets
+        """
+        await self.websocket_queue.put(message)
+
     async def _websocket_handler(self, request: Request) -> WebSocketResponse:
         """A websocket handler to send messages to Overlays
 
-                :param request: An aiohttp Request object
-                :return: The WebSocket response
-                """
+        :param request: An aiohttp Request object
+        :return: The WebSocket response
+        """
         ws = WebSocketResponse()
         await ws.prepare(request)
         # Add the websocket to the application registry
@@ -45,16 +52,28 @@ class BasePlugin:
         task = create_task(self._send_from_queue(ws))
         try:
             async for msg in ws:
+                # OBS overlays would not be expected to send info back,
+                # but we need to run this loop to handle PING messages from
+                # the client
                 pass
         finally:
             request.app['websockets'].discard(ws)
             task.cancel()
         return ws
 
-    async def _send_from_queue(self, ws):
+    async def _send_from_queue(self, ws: WebSocketResponse) -> None:
+        """Send a frame to the websockets server
+
+        :param ws: The WebSocketResponse object
+        """
         while not ws.closed:
             message = await self.websocket_queue.get()
-            await ws.send_str(message)
+            if isinstance(message, str):
+                await ws.send_str(message)
+            elif isinstance(message, (list, dict)):
+                await ws.send_json(message)
+            else:
+                await ws.send_bytes(message)
             self.websocket_queue.task_done()
 
 

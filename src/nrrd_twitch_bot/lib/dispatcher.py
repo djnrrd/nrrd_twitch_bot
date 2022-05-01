@@ -34,7 +34,7 @@ class Dispatcher:
     async def shutdown(self) -> None:
         """Shutdown the dispatcher
         """
-        self.logger.info('Shutting down both Dispatcher queues')
+        self.logger.info('dispatcher.py: Shutting down both Dispatcher queues')
         self._process_queue = False
         # Make sure we're not stuck waiting on the queues
         await self.chat_rcv_queue.put((0, 'SHUTDOWN'))
@@ -43,12 +43,12 @@ class Dispatcher:
     async def chat_receive(self) -> None:
         """Read messages from the chat queue and dispatch them to plugins
         """
-        self.logger.info('Starting Dispatcher receive queue')
+        self.logger.info('dispatcher.py: Starting Dispatcher receive queue')
         while self._process_queue:
             message = await self.chat_rcv_queue.get()
             # It's a priority queue, so get just the message
             message = message[1]
-            self.logger.debug(f"Dispatcher: {message}")
+            self.logger.debug(f"dispatcher.py: message: {message}")
             if message == 'PING :tmi.twitch.tv':
                 # As well as the keep alive pings and pongs the websockets
                 # library manages for us, Twitch sends a specific PING
@@ -61,7 +61,7 @@ class Dispatcher:
     async def chat_send(self) -> None:
         """Send messages back to Twitch chat
         """
-        self.logger.info('Starting Dispatcher send queue')
+        self.logger.info('dispatcher.py: Starting Dispatcher send queue')
         while self._process_queue:
             message = await self.chat_send_queue.get()
             # It's a priority queue, so send just the message
@@ -116,6 +116,6 @@ class Dispatcher:
             # Finally, the message, which may have had colons in it, so let's
             # rejoin
             privmsg['msg_text'] = ':'.join(parts[2:]).strip()
-            obj.logger.debug(f"do_privmsg: '{privmsg}'")
+            obj.logger.debug(f"dispatcher.py: do_privmsg: '{privmsg}'")
             await func(obj, privmsg)
         return inner_wrapper

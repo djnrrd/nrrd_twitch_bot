@@ -106,7 +106,7 @@ def load_plugins(send_queue: PriorityQueue, logger: Logger) -> List[BasePlugin]:
     """
     _update_paths(logger)
     modules = _load_from_config(logger)
-    logger.debug('plugins.py: Importing plugin libraries')
+    logger.info('plugins.py: Importing plugin libraries')
     plugins = []
     for module in modules:
         if importlib.util.find_spec('.plugin', module):

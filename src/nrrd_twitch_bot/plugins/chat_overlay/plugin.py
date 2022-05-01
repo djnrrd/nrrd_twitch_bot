@@ -1,7 +1,6 @@
 """An example plugin to provide an OBS chat overlay
 """
-from typing import Dict
-from typing import Union
+from typing import Dict, Union
 import os
 import json
 from aiohttp.web import Request, Response, FileResponse, StreamResponse, \

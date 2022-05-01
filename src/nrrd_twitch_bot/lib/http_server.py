@@ -19,12 +19,13 @@ def route_plugins(plugins: List[BasePlugin], logger: Logger) \
         # Use the plugin package name as the path
         package = plugin.__module__.split('.')[0]
         if hasattr(plugin, 'http_handler'):
-            logger.debug(f"Adding route for package {package} to HTTP server")
+            logger.debug(f"http_server.py: Adding route for package {package} "
+                         f"to HTTP server")
             ret_list.append(web.get(f"/{package}/http/{{path:.*}}",
                                     plugin.http_handler))
         if hasattr(plugin, 'websocket_handler'):
-            logger.debug(f"Adding route for package {package} to WebSockets "
-                         f"server")
+            logger.debug(f"http_server.py: Adding route for package {package} "
+                         f"to WebSockets server")
             ret_list.append(web.get(f"/{package}/ws/",
                                     plugin.websocket_handler))
     return ret_list
@@ -43,7 +44,7 @@ async def run_http_server(plugins: List[BasePlugin], logger: Logger) \
     app.add_routes(plugin_routes)
     runner = web.AppRunner(app)
     await runner.setup()
-    logger.info('Starting local HTTP Server')
+    logger.info('http_server.py: Starting local HTTP Server')
     site = web.TCPSite(runner, 'localhost', 8080)
     await site.start()
     return site

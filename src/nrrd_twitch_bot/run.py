@@ -1,19 +1,21 @@
 """Run the main web server and websocket components in their threads
 """
+from typing import List
+from logging import Logger
 import threading
 from functools import partial
-from logging import Logger
 from asyncio import create_task, PriorityQueue, AbstractEventLoop, gather
 from aiohttp.web import TCPSite
 from nrrd_twitch_bot.lib.twitch_chat import TwitchChat
 from nrrd_twitch_bot.lib.config import load_config
 from nrrd_twitch_bot.lib.dispatcher import Dispatcher
-from nrrd_twitch_bot.lib.plugins import load_plugins
+from nrrd_twitch_bot.lib.plugins import load_plugins, BasePlugin
 from nrrd_twitch_bot.lib.http_server import run_http_server
 
 
 async def shutdown_handler(chat: TwitchChat, dispatcher: Dispatcher,
                            site: TCPSite, logger: Logger,
+                           plugins: List[BasePlugin],
                            shutdown_queue: PriorityQueue) -> None:
     """Read the Shutdown Queue waiting for the shutdown message and shutdown
     the asyncio operations
@@ -22,6 +24,7 @@ async def shutdown_handler(chat: TwitchChat, dispatcher: Dispatcher,
     :param dispatcher: The BotDispatcher object
     :param site: The local HTTP Server
     :param logger: A logger object
+    :param plugins: A list of active plugins
     :param shutdown_queue: A python queue object for handling shutdowns from
         the TK thread
     """
@@ -37,6 +40,10 @@ async def shutdown_handler(chat: TwitchChat, dispatcher: Dispatcher,
             create_task(dispatcher.shutdown())
             logger.debug('run.py: Shutting down chat')
             create_task(chat.close())
+            logger.debug('run.py: Shutting down plugins')
+            for plugin in plugins:
+                if hasattr(plugin, 'stop'):
+                    create_task(plugin.stop())
             q_loop = False
         shutdown_queue.task_done()
     logger.debug('run.py: Exiting shutdown handler')
@@ -76,11 +83,12 @@ async def async_main(oauth_token: str, nickname: str, channel: str,
     futures = [chat.run(),
                dispatcher.chat_receive(),
                dispatcher.chat_send(),
-               shutdown_handler(chat, dispatcher, http_site, logger,
+               shutdown_handler(chat, dispatcher, http_site, logger, plugins,
                                 shutdown_queue)
                ]
+    futures += [x.run() for x in plugins if hasattr(x, 'run')]
     await gather(*futures)
-    logger.debug('run.py: All asyncio tasks')
+    logger.info('run.py: All asyncio tasks finished')
 
 
 def start_asyncio_loop(logger: Logger, loop: AbstractEventLoop,

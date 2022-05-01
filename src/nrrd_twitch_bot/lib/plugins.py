@@ -40,11 +40,14 @@ class BasePlugin:
                 """
         ws = WebSocketResponse()
         await ws.prepare(request)
+        # Add the websocket to the application registry
+        request.app['websockets'].add(ws)
         task = create_task(self._send_from_queue(ws))
         try:
             async for msg in ws:
                 pass
         finally:
+            request.app['websockets'].discard(ws)
             task.cancel()
         return ws
 

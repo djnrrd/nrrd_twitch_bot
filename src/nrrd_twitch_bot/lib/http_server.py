@@ -2,7 +2,8 @@
 """
 from typing import List
 from logging import Logger
-from aiohttp import web
+from aiohttp import web, WSCloseCode
+import weakref
 from nrrd_twitch_bot.lib.plugins import BasePlugin
 
 
@@ -31,6 +32,12 @@ def route_plugins(plugins: List[BasePlugin], logger: Logger) \
     return ret_list
 
 
+async def on_shutdown(app):
+    for ws in set(app['websockets']):
+        await ws.close(code=WSCloseCode.GOING_AWAY,
+                       message='Server shutdown')
+
+
 async def run_http_server(plugins: List[BasePlugin], logger: Logger) \
         -> web.TCPSite:
     """Start a simple aiohttp server and return it
@@ -40,6 +47,9 @@ async def run_http_server(plugins: List[BasePlugin], logger: Logger) \
     :return: The web server for shutting down externally
     """
     app = web.Application()
+    # Prepare a registry for the websocket sessions
+    app['websockets'] = weakref.WeakSet()
+    app.on_shutdown.append(on_shutdown)
     plugin_routes = route_plugins(plugins, logger)
     app.add_routes(plugin_routes)
     runner = web.AppRunner(app)

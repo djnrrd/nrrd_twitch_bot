@@ -61,10 +61,10 @@ def _load_from_config(logger: Logger) -> List[str]:
     :param logger: A logger object
     :return: The list of plugin names
     """
-    logger.debug('Loading plugin list')
+    logger.debug('plugins.py: Loading plugin list')
     config = load_config(logger)
     plugins = config['plugins']['plugins']
-    logger.debug(f"plugins list: {plugins}")
+    logger.debug(f"plugins.py: plugins list: {plugins}")
     return plugins.split(':')
 
 
@@ -73,24 +73,26 @@ def _update_paths(logger: Logger) -> None:
 
     :param logger:
     """
-    logger.debug('Adding local plugin path')
+    logger.debug('plugins.py: Adding local plugin path')
     local_plugin_path = os.path.join(os.path.dirname(__file__), '..', 'plugins')
     user_plugin_path = os.path.join(user_data_dir('nrrd-twitch-bot', 'djnrrd'),
                                     'plugins')
     if not os.path.isdir(user_plugin_path):
-        logger.debug('No plugin directory found, creating one')
+        logger.debug('plugins.py: No plugin directory found, creating one')
         # On Windows appdirs always have to be %AppDir%//author//appname so
         # we have to create the author folder first, which would end up being
         # empty on linux systems
         author_dir = os.path.join(user_data_dir(), 'djnrrd')
         if not os.path.isdir(author_dir):
-            logger.debug(f"Creating author directory: {author_dir}")
+            logger.debug(f"plugins.py: Creating author directory: {author_dir}")
             os.mkdir(author_dir)
         app_dir = user_data_dir('nrrd-twitch-bot', 'djnrrd')
         if not os.path.isdir(app_dir):
-            logger.debug(f"Creating application directory: {app_dir}")
+            logger.debug(f"plugins.py: Creating application directory: "
+                         f"{app_dir}")
             os.mkdir(app_dir)
-        logger.debug(f"Creating plugin directory: {user_plugin_path}")
+        logger.debug(f"plugins.py: Creating plugin directory: "
+                     f"{user_plugin_path}")
         os.mkdir(user_plugin_path)
     sys.path.extend([local_plugin_path, user_plugin_path])
 
@@ -104,12 +106,13 @@ def load_plugins(send_queue: PriorityQueue, logger: Logger) -> List[BasePlugin]:
     """
     _update_paths(logger)
     modules = _load_from_config(logger)
-    logger.debug('Importing plugin libraries')
+    logger.debug('plugins.py: Importing plugin libraries')
     plugins = []
     for module in modules:
         if importlib.util.find_spec('.plugin', module):
             load_module = importlib.import_module('.plugin', module)
-            logger.debug(f"Imported {str(load_module)} from {module}")
+            logger.debug(f"plugins.py: Imported {str(load_module)} "
+                         f"from {module}")
             for cls in getmembers(load_module, isclass):
                 if cls[1].__module__ == load_module.__name__:
                     logger.debug(f"Initialising plugin {cls[0]} "

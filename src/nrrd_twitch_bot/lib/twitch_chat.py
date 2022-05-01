@@ -58,19 +58,19 @@ class TwitchChat:
 
     async def open(self) -> None:
         """Open a websockets client that's stored in the object"""
-        self.logger.info('Starting TwitchChat client')
+        self.logger.info('twitch_chat.py: Starting TwitchChat client')
         if not self._session:
-            self.logger.debug('Starting session')
+            self.logger.debug('twitch_chat.py: Starting session')
             self._session = await client.connect(self.uri, logger=self.logger)
             if not await self._login():
                 await self.close()
 
     async def close(self) -> None:
         """Close the  websockets client stored in the object"""
-        self.logger.info('Shutting down TwitchChat client')
+        self.logger.info('twitch_chat.py: Shutting down TwitchChat client')
         if self._session:
             try:
-                self.logger.debug('Attempting to close session')
+                self.logger.debug('twitch_chat.py: Attempting to close session')
                 await self._session.close()
             except BaseException as exception:
                 raise exception
@@ -99,11 +99,12 @@ class TwitchChat:
         await self.send(f"PASS oauth:{self.oauth_token}")
         await self.send(f"NICK {self.nickname}")
         result = await self._session.recv()
-        self.logger.debug(f"Login: {result}")
+        self.logger.debug(f"twitch_chat.py: Login: {result}")
         if 'Login authentication failed' in result:
-            self.logger.error(f"Login authentication failed: {result}")
-            self.logger.error('Please check Twitch settings and re-authorise '
-                              'application')
+            self.logger.error(f"twitch_chat.py: Login authentication failed: "
+                              f"{result}")
+            self.logger.error('twitch_chat.py: Please check Twitch settings '
+                              'and re-authorise application')
             return None
         return True
 
@@ -114,17 +115,17 @@ class TwitchChat:
         """
         await self.send('CAP REQ :twitch.tv/membership')
         result = await self._session.recv()
-        self.logger.debug(f"Req Membership: {result}")
+        self.logger.debug(f"twitch_chat.py: Req Membership: {result}")
         if 'ACK :twitch.tv/membership' not in result:
             return None
         await self.send('CAP REQ :twitch.tv/tags')
         result = await self._session.recv()
-        self.logger.debug(f"Req Tags: {result}")
+        self.logger.debug(f"twitch_chat.py: Req Tags: {result}")
         if 'ACK :twitch.tv/tags' not in result:
             return None
         await self.send('CAP REQ :twitch.tv/commands')
         result = await self._session.recv()
-        self.logger.debug(f"Req commands: {result}")
+        self.logger.debug(f"twitch_chat.py: Req commands: {result}")
         if 'ACK :twitch.tv/commands' not in result:
             return None
         return True
@@ -136,7 +137,7 @@ class TwitchChat:
         """
         await self.send(f"JOIN #{self.channel}")
         result = await self._session.recv()
-        self.logger.debug(f"Join: {result}")
+        self.logger.debug(f"twitch_chat.py: Join: {result}")
         if f"JOIN #{self.channel}" not in result:
             return None
         return True
@@ -158,5 +159,5 @@ class TwitchChat:
                 frame = frame.strip()
                 messages = frame.split('\r\n')
                 for message in messages:
-                    self.logger.debug(f"Run: {message}")
+                    self.logger.debug(f"twitch_chat.py: Run: {message}")
                     await self.dispatch_queue.put((0, message))

@@ -99,23 +99,32 @@ class Dispatcher:
             :param msg: The raw message as received from the websockets queue
             """
             privmsg = {}
-            # Break the message into its parts, which should be colon separated.
-            parts = msg.split(':')
-            # The tags should be in the first colon separated section,
-            # they'll be preceded by an @ symbol. We don't need that. Each
+            # Previously the message was split by colon, however colons can
+            # be used in key/value pairs for the tags. Instead, find the
+            # PRIVMSG substring
+            msg_start = msg.find(f"PRIVMSG")
+            # Everything previous to PRIVMSG should be tags and the IRC user
+            # section. Let's do a colon split then rejoin knowing the IRC
+            # user section is on the end
+            parts = msg[:msg_start].split(':')
+            tags = ':'.join(parts[:-1])
+            irc_user = parts[-1]
+            # Tags will be preceded by an @ symbol. We don't need that. Each
             # tag is semicolon separated
             # https://dev.twitch.tv/docs/irc/tags#privmsg-twitch-tags
-            tags = parts[0][1:].split(';')
+            tags = tags[1:].split(';')
             for tag in tags:
                 # Tags are in a key=value format, but may not have values
                 tag_parts = tag.split('=')
                 privmsg[tag_parts[0]] = tag_parts[1]
             # The Display name is in the tags, so let's take the nickname from
-            # the prefix.
-            privmsg['nickname'] = parts[1].split('!')[0]
-            # Finally, the message, which may have had colons in it, so let's
-            # rejoin
-            privmsg['msg_text'] = ':'.join(parts[2:]).strip()
+            # the irc_user section
+            privmsg['nickname'] = irc_user.split('!')[0]
+            # Finally, the message text which we'll do the colon split and
+            # rejoin on and strip the carriage returns
+            privmsg['msg_text'] = \
+                ':'.join(msg[msg_start:].split(':')[1:]).strip()
+            # That should be done.  Log it and dispatch it
             obj.logger.debug(f"dispatcher.py: do_privmsg: '{privmsg}'")
             await func(obj, privmsg)
         return inner_wrapper

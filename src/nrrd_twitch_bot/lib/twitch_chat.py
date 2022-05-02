@@ -138,8 +138,14 @@ class TwitchChat:
         await self.send(f"JOIN #{self.channel}")
         result = await self._session.recv()
         self.logger.debug(f"twitch_chat.py: Join: {result}")
-        if f"JOIN #{self.channel}" not in result:
+        # This message may or may not be multiple lines of stuff. We're only
+        # concerned about the first line, the rest can go to the queue.
+        results = result.split('\r\n')
+        if f"JOIN #{self.channel}" not in results[0]:
             return None
+        for x in results[1:]:
+            if x:
+                await self.dispatch_queue.put((0, x))
         return True
 
     async def send(self, message: str) -> None:

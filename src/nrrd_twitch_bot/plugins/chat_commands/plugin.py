@@ -40,7 +40,7 @@ class ChatCommands(BasePlugin):
                                'this would end?'}
         return commands.get(command)
 
-    async def run(self) -> None:
+    async def _run(self) -> None:
         """Do things as a process
         """
         self.running = True
@@ -49,7 +49,7 @@ class ChatCommands(BasePlugin):
             await sleep(30)
             await self.send_chat('I awake, I sleep')
 
-    async def stop(self) -> None:
+    async def _stop(self) -> None:
         """Stop doing things as a process
         """
         self.logger.info('Stopping the plugin run() process')

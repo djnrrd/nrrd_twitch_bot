@@ -1,0 +1,8 @@
+p {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#chat_overlay {
+  position: absolute;
+  bottom: 10px;
+}

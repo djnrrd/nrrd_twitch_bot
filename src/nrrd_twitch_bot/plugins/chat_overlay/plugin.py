@@ -19,6 +19,35 @@ class ChatOverlay(BasePlugin):
         :param message: Websockets privmsg dictionary, with all tags as Key/Value
             pairs, plus the 'nickname' key, and the 'msg_text' key
         """
+        # Replace emote text with emote images
+        if message.get('emotes'):
+            # multiple emotes are / separated but don't replace them straight
+            # away
+            emotes = message['emotes'].split('/')
+            emote_list = []
+            for emote in emotes:
+                # The CDN UUID of the emote and the emote location are :
+                # separated
+                emote_code = emote.split(':')[0]
+                emote_url = f"<img src='https://static-cdn.jtvnw.net/" \
+                            f"emoticons/v2/{emote_code}/default/light/1.0' />"
+                # An emote may be repeated multiple times, positions are ,
+                # separated. But we only need the first one to work out the
+                # emote text
+                emote_markers = emote.split(':')[1].split(',')[0]
+                # Finally, the start and the end markers are - separated but
+                # for python slicing we need to add 1 to the end marker
+                emote_start = int(emote_markers.split('-')[0])
+                emote_end = int(emote_markers.split('-')[1]) + 1
+                emote_word = message['msg_text'][emote_start:emote_end]
+                emote_list.append((emote_word, emote_url))
+            # Now we replace the emote_words with the emote_urls, starting
+            # with the longest
+            for emote_word, emote_url in sorted(emote_list,
+                                                key=lambda x: len(x[0]),
+                                                reverse=True):
+                message['msg_text'] = message['msg_text'].replace(emote_word,
+                                                                  emote_url)
         self.logger.debug(f"chat_overlay plugin: {message}")
         await self.websocket_queue.put(json.dumps(message))
 
@@ -33,10 +62,14 @@ class ChatOverlay(BasePlugin):
         if request.match_info['path'] == '' \
                 or request.match_info['path'] == '/' \
                 or request.match_info['path'] == 'index.html':
-            return FileResponse(path=os.path.join(base_path, 'thanks.html'))
-        if request.match_info['path'] == 'thanks.js':
+            return FileResponse(path=os.path.join(base_path, 'index.html'))
+        if request.match_info['path'] == 'overlay.js':
             header = {'Content-type': 'application/ecmascript'}
-            return FileResponse(path=os.path.join(base_path, 'thanks.js'),
+            return FileResponse(path=os.path.join(base_path, 'overlay.js'),
+                                headers=header)
+        if request.match_info['path'] == 'style.css':
+            header = {'Content-type': 'text/css'}
+            return FileResponse(path=os.path.join(base_path, 'style.css'),
                                 headers=header)
 
     async def websocket_handler(self, request: Request) -> WebSocketResponse:

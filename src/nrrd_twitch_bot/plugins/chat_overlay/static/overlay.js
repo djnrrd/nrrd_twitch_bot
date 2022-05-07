@@ -1,5 +1,5 @@
 function add_chat_msg(chat_msg) {
-    document.getElementById('chat_overlay').
+    document.getElementById("chat_overlay").
     insertAdjacentHTML("beforeend",
     `<div class="chat_message" id="${chat_msg.id}">
         <div class="display_name">
@@ -14,12 +14,21 @@ function add_chat_msg(chat_msg) {
     `);
 };
 
+function delete_chat_messages(chat_msg) {
+    if (chat_msg.username  == "") {
+        document.getElementById("chat_overlay").innerHTML = "";
+    };
+};
+
 function msg_handler(msg) {
     console.log(`[message] Data received from server: ${msg.data}`);
     const chat_msg = JSON.parse(msg.data);
     switch(chat_msg.msg_type) {
         case "privmsg":
             add_chat_msg(chat_msg);
+            break;
+        case "clearchat":
+            delete_chat_messages(chat_msg);
             break;
     }
 };

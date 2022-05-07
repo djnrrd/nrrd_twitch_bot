@@ -4,13 +4,13 @@ function add_chat_msg(msg) {
     document.getElementById('chat_overlay').
         insertAdjacentHTML("beforeend",
         `<div class="chat_message" id="${chat_msg.id}">
-            <div class="display-name">
-                <p style="color:${chat_msg.color}">
+            <div class="display_name">
+                <p class="display_name" style="color:${chat_msg.color}">
                     ${chat_msg["display-name"]}
                 </p>
             </div>
             <div class="msg_text">
-                <p>${chat_msg.msg_text}</p>
+                <p class="msg_text">${chat_msg.msg_text}</p>
             </div>
         </div>
         `);

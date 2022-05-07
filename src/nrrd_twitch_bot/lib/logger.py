@@ -1,32 +1,40 @@
 """A module for setting up the logger and custom TK Scrolled Text log handler
 """
+from typing import Type, TYPE_CHECKING
+if TYPE_CHECKING:
+    from .tk import TwitchBotLogApp
+import pathlib
 import logging
 from tkinter import END, Text
 from datetime import datetime
 
 
-def setup_logger(app: 'TwitchBotLogApp', debug: bool = False) -> logging.Logger:
-    """Setup the logger for the application that uses the tkinter scrolling
-    text box for the logs
+def setup_logger(debug: bool = False, app: 'TwitchBotLogApp' = None,
+                 file_path: Type[pathlib.Path] = None) -> logging.Logger:
+    """Set up the logger for the application optionally using the tkinter
+    scrolling text box for the logs
 
-    :param app: The tkinter application
     :param debug: If debug messages should be logged
+    :param app: The tkinter application
+    :param file_path:
     :return: A Logger object
     """
-    # Create textLogger
-    text_handler = TkTextHandler(app.bot_log)
-    # Create a custom logger and add the Tk text handler
+    log_fmt = logging.Formatter('%(levelname)s - %(message)s')
     logger = logging.getLogger('twitch_bot')
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(log_fmt)
+    logger.addHandler(console_handler)
+    if app:
+        text_handler = TkTextHandler(app.bot_log)
+        logger.addHandler(text_handler)
+    if file_path:
+        file_handler = logging.FileHandler(file_path)
+        file_handler.setFormatter(log_fmt)
+        logger.addHandler(file_handler)
     if debug:
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(
-            logging.Formatter('%(levelname)s - %(message)s')
-        )
         logger.setLevel(logging.DEBUG)
-        logger.addHandler(console_handler)
     else:
         logger.setLevel(logging.INFO)
-    logger.addHandler(text_handler)
     return logger
 
 

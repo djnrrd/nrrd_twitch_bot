@@ -1,5 +1,7 @@
 """"The TK application for the Twitch bot log handler
 """
+from typing import Type, Union
+import pathlib
 from configparser import ConfigParser
 from logging import Logger
 import asyncio
@@ -18,16 +20,18 @@ class TwitchBotLogApp(tk.Tk):
     :param debug: If the logger should run in debug mode
     :param kwargs: List of keyword arguments for a Tk applications
     """
-    def __init__(self, debug: bool, *args, **kwargs) -> None:
+    def __init__(self, debug: bool,
+                 log_file_path: Union[Type[pathlib.Path], None],
+                 *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         # This custom property is required for the TK app setup
-        self.websockets = tk.BooleanVar(value=True)
+        self.run_services = tk.BooleanVar(value=False)
         # Setup the TK app
         self._setup_app()
         # Shortcut to the log widget
         self.bot_log = self.nametowidget('log_frame.!frame.bot_log_txt')
         # Start the logger
-        self.logger = setup_logger(self, debug)
+        self.logger = setup_logger(debug, self, log_file_path)
         # Create the asyncio event loop and shutdown message queue
         self.loop = asyncio.new_event_loop()
         self.shutdown_queue = asyncio.PriorityQueue()
@@ -62,9 +66,9 @@ class TwitchBotLogApp(tk.Tk):
         file_menu.add_command(label="Exit", command=self.close_app)
         menu_bar.add_cascade(label="File", menu=file_menu)
         run_menu = tk.Menu(menu_bar, tearoff=0)
-        run_menu.add_checkbutton(label="Start/Stop Websockets",
+        run_menu.add_checkbutton(label="Start/Stop Services",
                                  command=self.start_stop_sockets,
-                                 variable=self.websockets, onvalue=1,
+                                 variable=self.run_services, onvalue=1,
                                  offvalue=0)
         menu_bar.add_cascade(label="Run", menu=run_menu)
         return menu_bar
@@ -79,7 +83,7 @@ class TwitchBotLogApp(tk.Tk):
         """
         # The function is called AFTER the variable is set by the menu
         # checkbutton, so this looks ass backwards
-        if self.websockets.get():
+        if self.run_services.get():
             self.launch_sockets()
         else:
             self.shutdown_sockets()
@@ -87,13 +91,13 @@ class TwitchBotLogApp(tk.Tk):
     def launch_sockets(self) -> None:
         """Launch the websocket clients and servers in a thread
         """
-        self.logger.debug('tk.py: Starting up Asyncio thread')
+        self.logger.info('tk.py: Starting services in new thread')
         start_new_thread(self.logger, self.loop, self.shutdown_queue)
 
     def shutdown_sockets(self) -> None:
         """Gracefully shutdown the websocket clients and servers
         """
-        self.logger.debug('tk.py: Shutting down Asyncio thread')
+        self.logger.info('tk.py: Shutting down services')
         self.shutdown_queue.put_nowait((0, 'SHUTDOWN'))
         while self.loop.is_running():
             self.update()
@@ -103,7 +107,8 @@ class TwitchBotLogApp(tk.Tk):
         """Gracefully shutdown the websocket clients and servers before
         closing the tkinter app
         """
-        self.shutdown_sockets()
+        if self.run_services:
+            self.shutdown_sockets()
         self.destroy()
 
 

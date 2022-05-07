@@ -1,8 +1,8 @@
 """Dispatch messages between Twitch chat, plugins and websockets servers
 """
-import asyncio
-from typing import List, Callable, Any
+from typing import List, Callable, Any, Dict, Tuple
 from logging import Logger
+import asyncio
 from asyncio import PriorityQueue
 from functools import wraps
 from .twitch_chat import TwitchChat
@@ -56,6 +56,8 @@ class Dispatcher:
                 await self.chat.send('PONG :tmi.twitch.tv')
             elif f"PRIVMSG #{self.chat.channel}" in message:
                 await self._send_privmsg(message)
+            elif f"CLEARCHAT #{self.chat.channel}" in message:
+                await self._send_clearchat(message)
             self.chat_rcv_queue.task_done()
 
     async def chat_send(self) -> None:
@@ -82,6 +84,48 @@ class Dispatcher:
                 futures.append(plugin.do_privmsg(message))
         await asyncio.gather(*futures)
 
+    async def _send_clearchat(self, message: str) -> None:
+        """Send the clearchat messages to all the plugins that implement
+        do_clearchat
+
+        :param message: The raw message as received from the websockets queue
+        """
+        futures = []
+        for plugin in self.plugins:
+            if hasattr(plugin, 'do_clearchat'):
+                futures.append(plugin.do_clearchat(message))
+        await asyncio.gather(*futures)
+
+    @staticmethod
+    def _split_message(message: str, command: str) -> Tuple[Dict, str, str]:
+        """Split the tags out from the received websockets frame
+
+        :param message: The websockets frame
+        :param command:
+        :return:
+        """
+        tag_dict = {}
+        # Find the command
+        msg_start = message.find(command)
+        # Everything previous to the command should be tags and the IRC user
+        # and server section. Let's do a colon split then rejoin knowing the
+        # IRC user and server section is on the end
+        parts = message[:msg_start].split(':')
+        tags = ':'.join(parts[:-1])
+        irc_user_server = parts[-1]
+        # Tags will be preceded by an @ symbol. We don't need that. Each
+        # tag is semicolon separated
+        # https://dev.twitch.tv/docs/irc/tags#privmsg-twitch-tags
+        tags = tags[1:].split(';')
+        for tag in tags:
+            # Tags are in a key=value format, but may not have values
+            tag_parts = tag.split('=')
+            tag_dict[tag_parts[0]] = tag_parts[1]
+        # Finally, the command text which we'll do the colon split and
+        # rejoin on and strip the carriage returns
+        command_text = ':'.join(message[msg_start:].split(':')[1:]).strip()
+        return tag_dict, irc_user_server, command_text
+
     @staticmethod
     def do_privmsg(func: Callable) -> Callable[[str, Logger], Any]:
         """Decorator function for plugins to decorate their do_privmsg functions
@@ -98,33 +142,37 @@ class Dispatcher:
             :param obj: The plugin object
             :param msg: The raw message as received from the websockets queue
             """
-            privmsg = {}
-            # Previously the message was split by colon, however colons can
-            # be used in key/value pairs for the tags. Instead, find the
-            # PRIVMSG substring
-            msg_start = msg.find(f"PRIVMSG")
-            # Everything previous to PRIVMSG should be tags and the IRC user
-            # section. Let's do a colon split then rejoin knowing the IRC
-            # user section is on the end
-            parts = msg[:msg_start].split(':')
-            tags = ':'.join(parts[:-1])
-            irc_user = parts[-1]
-            # Tags will be preceded by an @ symbol. We don't need that. Each
-            # tag is semicolon separated
-            # https://dev.twitch.tv/docs/irc/tags#privmsg-twitch-tags
-            tags = tags[1:].split(';')
-            for tag in tags:
-                # Tags are in a key=value format, but may not have values
-                tag_parts = tag.split('=')
-                privmsg[tag_parts[0]] = tag_parts[1]
+            tag_dict, irc_user_server, command_text = \
+                Dispatcher._split_message(msg, 'PRIVMSG')
             # The Display name is in the tags, so let's take the nickname from
             # the irc_user section
-            privmsg['nickname'] = irc_user.split('!')[0]
-            # Finally, the message text which we'll do the colon split and
-            # rejoin on and strip the carriage returns
-            privmsg['msg_text'] = \
-                ':'.join(msg[msg_start:].split(':')[1:]).strip()
-            # That should be done.  Log it and dispatch it
-            obj.logger.debug(f"dispatcher.py: do_privmsg: '{privmsg}'")
-            await func(obj, privmsg)
+            tag_dict['nickname'] = irc_user_server.split('!')[0]
+            tag_dict['msg_text'] = command_text
+            obj.logger.debug(f"dispatcher.py: do_privmsg: '{tag_dict}'")
+            await func(obj, tag_dict)
+        return inner_wrapper
+
+    @staticmethod
+    def do_clearchat(func: Callable) -> Callable[[str, Logger], Any]:
+        """Decorator function for plugins to decorate their do_clearchat
+        functions
+
+        :param func: Plugin do_clearchat function
+        :return: The inner wrapper function
+        """
+        @wraps(func)
+        async def inner_wrapper(obj: BasePlugin, msg: str) -> None:
+            """Extract the tags and message from the raw clearchat received
+            from the websockets client, convert them to a Dictionary and pass
+            the dictionary and logger to the decorated functions
+
+            :param obj: The plugin object
+            :param msg: The raw message as received from the websockets queue
+            """
+            tag_dict, irc_user_server, command_text = \
+                Dispatcher._split_message(msg, 'CLEARCHAT')
+            # If we are clearing multiple
+            tag_dict['username'] = command_text
+            obj.logger.debug(f"dispatcher.py: do_clearchat: '{tag_dict}'")
+            await func(obj, tag_dict)
         return inner_wrapper

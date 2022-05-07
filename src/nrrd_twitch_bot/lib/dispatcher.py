@@ -58,7 +58,7 @@ class Dispatcher:
                 await self._send_privmsg(message)
             elif f"CLEARCHAT #{self.chat.channel}" in message:
                 await self._send_clearchat(message)
-            elif "CLEARMSG #{self.chat.channel}" in message:
+            elif f"CLEARMSG #{self.chat.channel}" in message:
                 await self._send_clearmsg(message)
             self.chat_rcv_queue.task_done()
 

@@ -50,12 +50,13 @@ class ChatOverlay(BasePlugin):
                                                                   emote_url)
         message['msg_type'] = 'privmsg'
         self.logger.debug(f"chat_overlay.plugin.py:  {message}")
-        await self.websocket_queue.put(json.dumps(message))
+        await self.websocket_queue.put(message)
 
     @Dispatcher.do_clearchat
     async def do_clearchat(self, message: Dict) -> None:
         message['msg_type'] = 'clearchat'
         self.logger.debug(f"chat_overlay.plugin.py:  {message}")
+        await self.websocket_queue.put(message)
 
     async def http_handler(self, request: Request) \
             -> Union[Response, FileResponse, StreamResponse]:

@@ -2,7 +2,6 @@
 """
 from typing import Dict, Union
 import os
-import json
 from aiohttp.web import Request, Response, FileResponse, StreamResponse, \
     WebSocketResponse
 from nrrd_twitch_bot import Dispatcher, BasePlugin

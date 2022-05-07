@@ -2,6 +2,7 @@
 """
 from typing import Dict, Union
 import os
+from html import escape
 from aiohttp.web import Request, Response, FileResponse, StreamResponse, \
     WebSocketResponse
 from nrrd_twitch_bot import Dispatcher, BasePlugin
@@ -18,6 +19,8 @@ class ChatOverlay(BasePlugin):
         :param message: Websockets privmsg dictionary, with all tags as Key/Value
             pairs, plus the 'nickname' key, and the 'msg_text' key
         """
+        # Escape HTML characters
+        message['msg_text'] = escape(message['msg_text'], quote=True)
         # Replace emote text with emote images
         if message.get('emotes'):
             # multiple emotes are / separated but don't replace them straight

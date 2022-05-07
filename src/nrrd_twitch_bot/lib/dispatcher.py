@@ -58,6 +58,8 @@ class Dispatcher:
                 await self._send_privmsg(message)
             elif f"CLEARCHAT #{self.chat.channel}" in message:
                 await self._send_clearchat(message)
+            elif "CLEARMSG #{self.chat.channel}" in message:
+                await self._send_clearmsg(message)
             self.chat_rcv_queue.task_done()
 
     async def chat_send(self) -> None:
@@ -94,6 +96,18 @@ class Dispatcher:
         for plugin in self.plugins:
             if hasattr(plugin, 'do_clearchat'):
                 futures.append(plugin.do_clearchat(message))
+        await asyncio.gather(*futures)
+
+    async def _send_clearmsg(self, message: str) -> None:
+        """Send the clearmsg messages to all the plugins that implement
+        do_clearmsg
+
+        :param message: The raw message as received from the websockets queue
+        """
+        futures = []
+        for plugin in self.plugins:
+            if hasattr(plugin, 'do_clearmsg'):
+                futures.append(plugin.do_clearmsg(message))
         await asyncio.gather(*futures)
 
     @staticmethod
@@ -171,8 +185,34 @@ class Dispatcher:
             """
             tag_dict, irc_user_server, command_text = \
                 Dispatcher._split_message(msg, 'CLEARCHAT')
-            # If we are clearing multiple
+            # If we are clearing user messages the username should be in the
+            # command text
             tag_dict['username'] = command_text
             obj.logger.debug(f"dispatcher.py: do_clearchat: '{tag_dict}'")
+            await func(obj, tag_dict)
+        return inner_wrapper
+
+    @staticmethod
+    def do_clearmsg(func: Callable) -> Callable[[str, Logger], Any]:
+        """Decorator function for plugins to decorate their do_clearmsg
+        functions
+
+        :param func: Plugin do_clearmsg function
+        :return: The inner wrapper function
+        """
+        @wraps(func)
+        async def inner_wrapper(obj: BasePlugin, msg: str) -> None:
+            """Extract the tags and message from the raw clearmsg received
+            from the websockets client, convert them to a Dictionary and pass
+            the dictionary and logger to the decorated functions
+
+            :param obj: The plugin object
+            :param msg: The raw message as received from the websockets queue
+            """
+            tag_dict, irc_user_server, command_text = \
+                Dispatcher._split_message(msg, 'CLEARMSG')
+            # The message to be deleted is in the command_text
+            tag_dict['msg_text'] = command_text
+            obj.logger.debug(f"dispatcher.py: do_clearmsg: '{tag_dict}'")
             await func(obj, tag_dict)
         return inner_wrapper

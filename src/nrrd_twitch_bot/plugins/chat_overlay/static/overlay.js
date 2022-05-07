@@ -12,7 +12,7 @@ function add_chat_msg(chat_msg) {
         </div>
     </div>
     `);
-};
+}
 
 function delete_chat_messages(chat_msg) {
     if (chat_msg.username  == "") {
@@ -26,7 +26,11 @@ function delete_chat_messages(chat_msg) {
             chats[0].parentNode.removeChild(chats[0]);
         }
     }
-};
+}
+
+function delete_individual_message(chat_msg) {
+    document.getElementById(chat_msg["target-msg-id"]).innerHTML = "";
+}
 
 function msg_handler(msg) {
     console.log(`[message] Data received from server: ${msg.data}`);
@@ -38,8 +42,11 @@ function msg_handler(msg) {
         case "clearchat":
             delete_chat_messages(chat_msg);
             break;
+        case "clearmsg":
+            delete_individual_message(chat_msg);
+            break;
     }
-};
+}
 
 function connect() {
     var socket = new WebSocket("ws://localhost:8080/chat_overlay/ws/");
@@ -65,6 +72,6 @@ function connect() {
     socket.onerror = function(error) {
         console.log(`[error] ${error.message}`);
     };
-};
+}
 
 connect();

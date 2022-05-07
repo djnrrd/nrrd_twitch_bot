@@ -57,6 +57,12 @@ class ChatOverlay(BasePlugin):
         self.logger.debug(f"chat_overlay.plugin.py: {message}")
         await self.websocket_queue.put(message)
 
+    @Dispatcher.do_clearmsg
+    async def do_clearmsg(self, message: Dict) -> None:
+        message['msg_type'] = 'clearmsg'
+        self.logger.debug(f"chat_overlay.plugin.py: {message}")
+        await self.websocket_queue.put(message)
+
     async def http_handler(self, request: Request) \
             -> Union[Response, FileResponse, StreamResponse]:
         """Serve files through the HTTP protocol

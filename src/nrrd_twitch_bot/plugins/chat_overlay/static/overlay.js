@@ -6,7 +6,7 @@ function add_chat_msg(msg) {
         `<div class="chat_message" id="${chat_msg.id}">
             <div class="display_name">
                 <p class="display_name" style="color:${chat_msg.color}">
-                    ${chat_msg["display-name"]}
+                    ${chat_msg["display-name"]}:
                 </p>
             </div>
             <div class="msg_text">

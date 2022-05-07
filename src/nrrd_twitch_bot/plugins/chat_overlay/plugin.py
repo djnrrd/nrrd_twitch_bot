@@ -14,7 +14,7 @@ class ChatOverlay(BasePlugin):
 
     @Dispatcher.do_privmsg
     async def do_privmsg(self, message: Dict) -> None:
-        """Log the message dictionary from the dispatcher to the logger object
+        """Add emotes to the
 
         :param message: Websockets privmsg dictionary, with all tags as Key/Value
             pairs, plus the 'nickname' key, and the 'msg_text' key
@@ -48,8 +48,14 @@ class ChatOverlay(BasePlugin):
                                                 reverse=True):
                 message['msg_text'] = message['msg_text'].replace(emote_word,
                                                                   emote_url)
+        message['msg_type'] = 'privmsg'
         self.logger.debug(f"chat_overlay.plugin.py:  {message}")
         await self.websocket_queue.put(json.dumps(message))
+
+    @Dispatcher.do_clearchat
+    async def do_clearchat(self, message: Dict) -> None:
+        message['msg_type'] = 'clearchat'
+        self.logger.debug(f"chat_overlay.plugin.py:  {message}")
 
     async def http_handler(self, request: Request) \
             -> Union[Response, FileResponse, StreamResponse]:

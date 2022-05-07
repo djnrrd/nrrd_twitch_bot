@@ -1,19 +1,27 @@
-function add_chat_msg(msg) {
-    console.log(`[message] Data received from server: ${event.data}`);
-    const chat_msg = JSON.parse(event.data);
+function add_chat_msg(chat_msg) {
     document.getElementById('chat_overlay').
-        insertAdjacentHTML("beforeend",
-        `<div class="chat_message" id="${chat_msg.id}">
-            <div class="display_name">
-                <p class="display_name" style="color:${chat_msg.color}">
-                    ${chat_msg["display-name"]}:
-                </p>
-            </div>
-            <div class="msg_text">
-                <p class="msg_text">${chat_msg.msg_text}</p>
-            </div>
+    insertAdjacentHTML("beforeend",
+    `<div class="chat_message" id="${chat_msg.id}">
+        <div class="display_name">
+            <p class="display_name" style="color:${chat_msg.color}">
+                ${chat_msg["display-name"]}:
+            </p>
         </div>
-        `);
+        <div class="msg_text">
+            <p class="msg_text">${chat_msg.msg_text}</p>
+        </div>
+    </div>
+    `);
+};
+
+function msg_handler(msg) {
+    console.log(`[message] Data received from server: ${msg.data}`);
+    const chat_msg = JSON.parse(msg.data);
+    switch(chat_msg.msg_type) {
+        case "privmsg":
+            add_chat_msg(chat_msg);
+            break;
+    }
 };
 
 function connect() {
@@ -23,7 +31,7 @@ function connect() {
         console.log("[open] Connection established");
     };
 
-    socket.onmessage = add_chat_msg;
+    socket.onmessage = msg_handler;
 
     socket.onclose = function(event) {
         if (event.wasClean) {
@@ -43,9 +51,3 @@ function connect() {
 };
 
 connect();
-
-
-
-
-
-

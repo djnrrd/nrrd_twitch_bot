@@ -1,7 +1,7 @@
 function add_chat_msg(chat_msg) {
     document.getElementById("chat_overlay").
     insertAdjacentHTML("beforeend",
-    `<div class="chat_message" id="${chat_msg.id}">
+    `<div class="chat_message ${chat_msg["user-id"]}" id="${chat_msg.id}">
         <div class="display_name">
             <p class="display_name" style="color:${chat_msg.color}">
                 ${chat_msg["display-name"]}:
@@ -17,7 +17,15 @@ function add_chat_msg(chat_msg) {
 function delete_chat_messages(chat_msg) {
     if (chat_msg.username  == "") {
         document.getElementById("chat_overlay").innerHTML = "";
-    };
+    } else {
+        console.log(`Trying to remove messages for
+                    ${chat_msg["target-user-id"]}`);
+        const chats = document.getElementsByClassName
+            (chat_msg["target-user-id"]);
+        while (chats.length > 0) {
+            chats[0].parentNode.removeChild(chats[0]);
+        }
+    }
 };
 
 function msg_handler(msg) {

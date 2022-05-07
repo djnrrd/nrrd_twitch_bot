@@ -48,7 +48,7 @@ class ChatOverlay(BasePlugin):
                                                 reverse=True):
                 message['msg_text'] = message['msg_text'].replace(emote_word,
                                                                   emote_url)
-        self.logger.debug(f"chat_overlay plugin: {message}")
+        self.logger.debug(f"chat_overlay.plugin.py:  {message}")
         await self.websocket_queue.put(json.dumps(message))
 
     async def http_handler(self, request: Request) \
@@ -62,13 +62,16 @@ class ChatOverlay(BasePlugin):
         if request.match_info['path'] == '' \
                 or request.match_info['path'] == '/' \
                 or request.match_info['path'] == 'index.html':
+            self.logger.debug('chat_overlay.plugin.py: sending index page')
             return FileResponse(path=os.path.join(base_path, 'index.html'))
         if request.match_info['path'] == 'overlay.js':
             header = {'Content-type': 'application/ecmascript'}
+            self.logger.debug('chat_overlay.plugin.py: sending Javascript')
             return FileResponse(path=os.path.join(base_path, 'overlay.js'),
                                 headers=header)
         if request.match_info['path'] == 'style.css':
             header = {'Content-type': 'text/css'}
+            self.logger.debug('chat_overlay.plugin.py: sending stylesheet')
             return FileResponse(path=os.path.join(base_path, 'style.css'),
                                 headers=header)
 

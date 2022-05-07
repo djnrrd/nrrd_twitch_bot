@@ -1,6 +1,6 @@
 """A module for setting up the logger and custom TK Scrolled Text log handler
 """
-from typing import Type, TYPE_CHECKING
+from typing import Type, TYPE_CHECKING, Union
 if TYPE_CHECKING:
     from .tk import TwitchBotLogApp
 import pathlib
@@ -9,8 +9,10 @@ from tkinter import END, Text
 from datetime import datetime
 
 
-def setup_logger(debug: bool = False, app: 'TwitchBotLogApp' = None,
-                 file_path: Type[pathlib.Path] = None) -> logging.Logger:
+def setup_logger(debug: bool = False,
+                 app: Union['TwitchBotLogApp', None] = None,
+                 file_path: Union[Type[pathlib.Path], None] = None) \
+        -> logging.Logger:
     """Set up the logger for the application optionally using the tkinter
     scrolling text box for the logs
 

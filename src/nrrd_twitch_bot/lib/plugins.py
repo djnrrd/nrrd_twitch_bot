@@ -1,6 +1,6 @@
 """Load plugins from the config file and import them
 """
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Tuple
 from asyncio import PriorityQueue, create_task
 from logging import Logger
 from inspect import getmembers, isclass
@@ -17,20 +17,11 @@ class BasePlugin:
     """Basic object that plugins must inherit from, providing a logger and
     queues
 
-    :param send_chat_queue: The asyncio queue object for sending to chat
     :param logger: A logger object
     """
-    def __init__(self, send_chat_queue: PriorityQueue, logger: Logger) -> None:
-        self.send_chat_queue = send_chat_queue
+    def __init__(self, logger: Logger) -> None:
         self.websocket_queue = PriorityQueue()
         self.logger = logger
-
-    async def send_chat(self, message: str) -> None:
-        """Send a chat message back to the dispatcher
-
-        :param message: The text to send to chat
-        """
-        await self.send_chat_queue.put((0, message))
 
     async def send_web_socket(self, message: Union[List, Dict, str, bytes]):
         """Send a message to the Websockets server for overlays
@@ -119,10 +110,9 @@ def _update_paths(logger: Logger) -> None:
     sys.path.extend([local_plugin_path, user_plugin_path])
 
 
-def load_plugins(send_queue: PriorityQueue, logger: Logger) -> List[BasePlugin]:
+def load_plugins(logger: Logger) -> List[BasePlugin]:
     """load all plugin objects
 
-    :param send_queue: An asyncio priority queue object
     :param logger: A logger object
     :return: A list of initiated of plugins
     """
@@ -139,5 +129,5 @@ def load_plugins(send_queue: PriorityQueue, logger: Logger) -> List[BasePlugin]:
                 if cls[1].__module__ == load_module.__name__:
                     logger.debug(f"Initialising plugin {cls[0]} "
                                  f"from {load_module}")
-                    plugins.append(cls[1](send_queue, logger))
+                    plugins.append(cls[1](logger))
     return plugins

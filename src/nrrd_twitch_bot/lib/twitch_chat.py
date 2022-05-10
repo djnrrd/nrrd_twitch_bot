@@ -179,7 +179,14 @@ class TwitchChat:
             messages = frame.split('\r\n')
             for message in messages:
                 self.logger.debug(f"twitch_chat.py: Received {message}")
-                asyncio.create_task(self.rcv_queue.put((0, message)))
+                if message == 'PING :tmi.twitch.tv':
+                    # As well as the keep alive pings and pongs the websockets
+                    # library manages for us, Twitch sends a specific PING
+                    # message periodically
+                    asyncio.create_task(
+                        self._session.send('PONG :tmi.twitch.tv'))
+                else:
+                    asyncio.create_task(self.rcv_queue.put((0, message)))
 
     async def run(self) -> None:
         """Run the chat session

@@ -2,7 +2,7 @@
 """
 from typing import Optional, Type, Union
 from types import TracebackType
-from asyncio import PriorityQueue
+import asyncio
 from logging import Logger
 from websockets import client
 
@@ -19,18 +19,25 @@ class TwitchChat:
     :param oauth_token: OAuth2 token received from Twitch
     :param nickname: Twitch username
     :param channel: Twitch channel to join
+    :param rcv_queue: An Asyncio priority queue object to send messages from
+        twitch chat to the dispatcher
+    :param send_queue: An Asyncio priority queue object to send messages to
+        twitch chat from the dispatcher
     :param logger: A logger object
     """
 
     def __init__(self, oauth_token: str, nickname: str, channel: str,
-                 logger: Logger, dispatch_queue: PriorityQueue) -> None:
+                 rcv_queue: asyncio.PriorityQueue,
+                 send_queue: asyncio.PriorityQueue,
+                 logger: Logger) -> None:
         self.uri: str = 'wss://irc-ws.chat.twitch.tv:443'
         self.oauth_token = oauth_token
         self.nickname = nickname
         self.channel = channel.lower()
         self.logger = logger
         self._session: Union[client.WebSocketClientProtocol, None] = None
-        self.dispatch_queue = dispatch_queue
+        self.rcv_queue = rcv_queue
+        self.send_queue = send_queue
 
     def __enter__(self) -> None:
         """Should not be using with the normal context manager"""
@@ -58,7 +65,7 @@ class TwitchChat:
 
     async def open(self) -> None:
         """Open a websockets client that's stored in the object"""
-        self.logger.info('twitch_chat.py: Starting TwitchChat client')
+        self.logger.debug('twitch_chat.py: Starting TwitchChat client')
         if not self._session:
             self.logger.debug('twitch_chat.py: Starting session')
             self._session = await client.connect(self.uri, logger=self.logger)
@@ -67,7 +74,7 @@ class TwitchChat:
 
     async def close(self) -> None:
         """Close the  websockets client stored in the object"""
-        self.logger.info('twitch_chat.py: Shutting down TwitchChat client')
+        self.logger.debug('twitch_chat.py: Shutting down TwitchChat client')
         if self._session:
             try:
                 self.logger.debug('twitch_chat.py: Attempting to close session')
@@ -96,8 +103,8 @@ class TwitchChat:
 
         :return: True if authenticated.
         """
-        await self.send(f"PASS oauth:{self.oauth_token}")
-        await self.send(f"NICK {self.nickname}")
+        await self._session.send(f"PASS oauth:{self.oauth_token}")
+        await self._session.send(f"NICK {self.nickname}")
         result = await self._session.recv()
         self.logger.debug(f"twitch_chat.py: Login: {result}")
         if 'Login authentication failed' in result:
@@ -113,17 +120,17 @@ class TwitchChat:
 
         :return: True if all features were acknowledged
         """
-        await self.send('CAP REQ :twitch.tv/membership')
+        await self._session.send('CAP REQ :twitch.tv/membership')
         result = await self._session.recv()
         self.logger.debug(f"twitch_chat.py: Req Membership: {result}")
         if 'ACK :twitch.tv/membership' not in result:
             return None
-        await self.send('CAP REQ :twitch.tv/tags')
+        await self._session.send('CAP REQ :twitch.tv/tags')
         result = await self._session.recv()
         self.logger.debug(f"twitch_chat.py: Req Tags: {result}")
         if 'ACK :twitch.tv/tags' not in result:
             return None
-        await self.send('CAP REQ :twitch.tv/commands')
+        await self._session.send('CAP REQ :twitch.tv/commands')
         result = await self._session.recv()
         self.logger.debug(f"twitch_chat.py: Req commands: {result}")
         if 'ACK :twitch.tv/commands' not in result:
@@ -135,7 +142,7 @@ class TwitchChat:
 
         :return: True if the JOIN was successful
         """
-        await self.send(f"JOIN #{self.channel}")
+        await self._session.send(f"JOIN #{self.channel}")
         result = await self._session.recv()
         self.logger.debug(f"twitch_chat.py: Join: {result}")
         # This message may or may not be multiple lines of stuff. We're only
@@ -145,25 +152,41 @@ class TwitchChat:
             return None
         for x in results[1:]:
             if x:
-                await self.dispatch_queue.put((0, x))
+                await self.rcv_queue.put((0, x))
         return True
 
-    async def send(self, message: str) -> None:
-        """Send a message to the Twitch websockets server
-
-        :param message: The message to send
+    async def _process_send_queue(self) -> None:
+        """Send messages to the Twitch websockets server received from the
+        send queue
         """
-        await self._session.send(message)
+        while self._session is not None:
+            message = await self.send_queue.get()
+            # It's a priority queue, so send just the message
+            message = message[1]
+            chat_command = f"PRIVMSG #{self.channel} :{message}"
+            self.logger.debug(f"twitch_chat.py: sending {chat_command}")
+            asyncio.create_task(self._session.send(chat_command))
+            self.send_queue.task_done()
+
+    async def _process_rcv_queue(self) -> None:
+        """Send messages received from the Twitch websockets server out to
+        the recieve queue.
+        """
+        async for frame in self._session:
+            # Messages may be multiline, split with '\r\n' and always have
+            # '\r\n' at the end of the message
+            frame = frame.strip()
+            messages = frame.split('\r\n')
+            for message in messages:
+                self.logger.debug(f"twitch_chat.py: Received {message}")
+                asyncio.create_task(self.rcv_queue.put((0, message)))
 
     async def run(self) -> None:
         """Run the chat session
         """
         if self._session:
-            async for frame in self._session:
-                # Messages may be multiline, split with '\r\n' and always have
-                # '\r\n' at the end of the message
-                frame = frame.strip()
-                messages = frame.split('\r\n')
-                for message in messages:
-                    self.logger.debug(f"twitch_chat.py: Run: {message}")
-                    await self.dispatch_queue.put((0, message))
+            # Create the send queue listener as a task, so it runs concurrently
+            asyncio.create_task(self._process_send_queue())
+            # Await the rcv function, so it blocks the calling function which
+            # should be using the context manager
+            await self._process_rcv_queue()

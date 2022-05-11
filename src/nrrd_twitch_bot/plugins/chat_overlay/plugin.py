@@ -12,8 +12,7 @@ class ChatOverlay(BasePlugin):
     """An OBS Overlay for twitch chat
     """
 
-    @Dispatcher.do_privmsg
-    async def do_privmsg(self, message: Dict) -> None:
+    async def do_privmsg(self, message: Dict, dispatcher: Dispatcher) -> None:
         """Add emotes to the
 
         :param message: Websockets privmsg dictionary, with all tags as Key/Value
@@ -54,14 +53,12 @@ class ChatOverlay(BasePlugin):
         self.logger.debug(f"chat_overlay.plugin.py:  {message}")
         await self.websocket_queue.put(message)
 
-    @Dispatcher.do_clearchat
-    async def do_clearchat(self, message: Dict) -> None:
+    async def do_clearchat(self, message: Dict, dispatcher: Dispatcher) -> None:
         message['msg_type'] = 'clearchat'
         self.logger.debug(f"chat_overlay.plugin.py: {message}")
         await self.websocket_queue.put(message)
 
-    @Dispatcher.do_clearmsg
-    async def do_clearmsg(self, message: Dict) -> None:
+    async def do_clearmsg(self, message: Dict, dispatcher: Dispatcher) -> None:
         message['msg_type'] = 'clearmsg'
         self.logger.debug(f"chat_overlay.plugin.py: {message}")
         await self.websocket_queue.put(message)

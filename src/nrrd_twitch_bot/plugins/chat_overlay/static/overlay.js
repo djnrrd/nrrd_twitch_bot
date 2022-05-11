@@ -64,8 +64,8 @@ function connect() {
             // e.g. server process killed or network down
             // event.code is usually 1006 in this case
             // Sleep for 2 seconds and try again
-            console.log('[close] Connection died');
-            setTimeout(function() {connect();}, 2000);
+            console.log(`[close] Connection died code=${event.code} reason=${event.reason}`);
+            setTimeout(function() {connect();}, 5000);
         };
     };
 

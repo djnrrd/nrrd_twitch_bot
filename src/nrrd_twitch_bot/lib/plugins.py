@@ -127,7 +127,7 @@ def load_plugins(logger: Logger) -> List[BasePlugin]:
                          f"from {module}")
             for cls in getmembers(load_module, isclass):
                 if cls[1].__module__ == load_module.__name__:
-                    logger.debug(f"Initialising plugin {cls[0]} "
+                    logger.debug(f"plugins.py: Initialising plugin {cls[0]} "
                                  f"from {load_module}")
                     plugins.append(cls[1](logger))
     return plugins

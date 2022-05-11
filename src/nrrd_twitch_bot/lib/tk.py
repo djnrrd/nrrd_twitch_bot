@@ -33,8 +33,7 @@ class TwitchBotLogApp(tk.Tk):
         # Start the logger
         self.logger = setup_logger(debug, self, log_file_path)
         # Create the asyncio event loop and shutdown message queue
-        self.loop = asyncio.new_event_loop()
-        self.shutdown_queue = asyncio.PriorityQueue()
+        self.shutdown_event = asyncio.Event()
 
     def _setup_app(self) -> None:
         """Setup the TK application and widgets
@@ -67,7 +66,7 @@ class TwitchBotLogApp(tk.Tk):
         menu_bar.add_cascade(label="File", menu=file_menu)
         run_menu = tk.Menu(menu_bar, tearoff=0)
         run_menu.add_checkbutton(label="Start/Stop Services",
-                                 command=self.start_stop_sockets,
+                                 command=self.start_stop_services,
                                  variable=self.run_services, onvalue=1,
                                  offvalue=0)
         menu_bar.add_cascade(label="Run", menu=run_menu)
@@ -78,28 +77,28 @@ class TwitchBotLogApp(tk.Tk):
         """
         OptionsWindow(self)
 
-    def start_stop_sockets(self) -> None:
+    def start_stop_services(self) -> None:
         """Toggle running the Websockets clients and servers via the Run menu
         """
         # The function is called AFTER the variable is set by the menu
         # checkbutton, so this looks ass backwards
         if self.run_services.get():
-            self.launch_sockets()
+            self.launch_services()
         else:
-            self.shutdown_sockets()
+            self.shutdown_services()
 
-    def launch_sockets(self) -> None:
+    def launch_services(self) -> None:
         """Launch the websocket clients and servers in a thread
         """
         self.logger.info('tk.py: Starting services in new thread')
-        start_new_thread(self.logger, self.loop, self.shutdown_queue)
+        start_new_thread(self.logger, self.shutdown_event)
 
-    def shutdown_sockets(self) -> None:
+    def shutdown_services(self) -> None:
         """Gracefully shutdown the websocket clients and servers
         """
         self.logger.info('tk.py: Shutting down services')
-        self.shutdown_queue.put_nowait((0, 'SHUTDOWN'))
-        while self.loop.is_running():
+        self.shutdown_event.set()
+        while self.shutdown_event.is_set():
             self.update()
         self.logger.debug('tk.py: self.loop no longer running')
 
@@ -107,8 +106,8 @@ class TwitchBotLogApp(tk.Tk):
         """Gracefully shutdown the websocket clients and servers before
         closing the tkinter app
         """
-        if self.run_services:
-            self.shutdown_sockets()
+        if self.run_services.get():
+            self.shutdown_services()
         self.destroy()
 
 

@@ -3,10 +3,9 @@
 from typing import Type, Union
 import argparse
 import pathlib
-import asyncio
 from .lib.tk import TwitchBotLogApp
 from .lib.logger import setup_logger
-from .run import start_asyncio_loop
+from .run import run_async_tasks
 
 
 def _add_args() -> argparse.ArgumentParser:
@@ -43,11 +42,9 @@ def run_console(debug: bool, log_file_path: Union[Type[pathlib.Path], None]) \
     :param debug:
     :param log_file_path:
     """
-    loop = asyncio.new_event_loop()
-    shutdown_queue = asyncio.PriorityQueue()
     logger = setup_logger(debug, file_path=log_file_path)
     logger.info('cli_entry.py: Starting services in console mode')
-    start_asyncio_loop(logger, loop, shutdown_queue)
+    run_async_tasks(logger)
 
 
 def main() -> None:

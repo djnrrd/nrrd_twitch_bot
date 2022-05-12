@@ -10,7 +10,12 @@ from nrrd_twitch_bot.lib.plugins import BasePlugin
 
 
 class OverlayServer:
+    """Wrap the aiohttp server in a class that can be used as a context
+    manager
 
+    :param plugins: A list of plugins that may be added to the web server
+    :param logger: A logger object
+    """
     def __init__(self, plugins: List[BasePlugin], logger: Logger) -> None:
         self.logger = logger
         self.routes = self._build_routes(plugins)
@@ -46,21 +51,21 @@ class OverlayServer:
         if not self.site:
             runner = await self._build_runner()
             self.site = web.TCPSite(runner, 'localhost', 8080)
-            self.logger.debug('http_server.py: Starting HTTP Server')
+            self.logger.info('http_server.py: Starting HTTP Server')
             await self.site.start()
 
     async def close(self) -> None:
         """Use the TCPSite functionality to gracefully shut down the HTTP server
         """
         if self.site:
-            self.logger.debug('http_server.py: Shutting down HTTP server')
+            self.logger.info('http_server.py: Shutting down HTTP server')
             await self.site.stop()
 
     def _build_routes(self, plugins: List[BasePlugin]) -> List[web.RouteDef]:
         """Create the list of routes
 
         :param plugins: A list of plugins
-        :return:
+        :return: A list of aiohttp route objects
         """
         ret_list = []
         for plugin in plugins:
@@ -81,7 +86,7 @@ class OverlayServer:
     async def _build_runner(self) -> web.AppRunner:
         """Build the aiohttp application and web runner
 
-        :return: The web server for shutting down externally
+        :return: The aiohttp AppRunner object
         """
         self.logger.debug('http_server.py: Building AppRunner and routes')
         app = web.Application()
@@ -105,7 +110,6 @@ class OverlayServer:
             app['logger'].debug(f"http_server.py: shutting down websocket {ws}")
             await ws.close(code=WSCloseCode.GOING_AWAY,
                            message='Server shutdown')
-            app['logger'].debug(f"http_server.py: {ws} should be closed")
 
     @staticmethod
     async def run() -> None:

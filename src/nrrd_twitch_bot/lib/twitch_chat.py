@@ -65,7 +65,7 @@ class TwitchChat:
 
     async def open(self) -> None:
         """Open a websockets client that's stored in the object"""
-        self.logger.debug('twitch_chat.py: Starting TwitchChat client')
+        self.logger.info('twitch_chat.py: Starting TwitchChat client')
         if not self._session:
             self.logger.debug('twitch_chat.py: Starting session')
             self._session = await client.connect(self.uri, logger=self.logger)
@@ -74,7 +74,7 @@ class TwitchChat:
 
     async def close(self) -> None:
         """Close the  websockets client stored in the object"""
-        self.logger.debug('twitch_chat.py: Shutting down TwitchChat client')
+        self.logger.info('twitch_chat.py: Shutting down TwitchChat client')
         if self._session:
             try:
                 self.logger.debug('twitch_chat.py: Attempting to close session')

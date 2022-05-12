@@ -33,16 +33,16 @@ class Dispatcher:
     async def run(self) -> None:
         """Run the dispatcher queue
         """
+        self.logger.info('dispatcher.py: Starting the Dispatcher')
         await self._process_receive_queue()
 
     async def shutdown(self) -> None:
         """Shutdown the dispatcher
         """
-        self.logger.debug('dispatcher.py: Shutting down both Dispatcher queues')
+        self.logger.info('dispatcher.py: Shutting down the Dispatcher')
         self._process_queue = False
         # Make sure we're not stuck waiting on the queues
         await self.chat_rcv_queue.put((0, 'SHUTDOWN'))
-        await self.chat_send_queue.put((0, 'Shutting down Bot'))
 
     async def _process_receive_queue(self) -> None:
         """Read messages from the chat queue and dispatch them to plugins

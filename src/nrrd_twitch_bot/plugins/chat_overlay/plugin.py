@@ -1,8 +1,12 @@
 """An example plugin to provide an OBS chat overlay
 """
-from typing import Dict, Union
+from typing import Dict, Union, List
+from logging import Logger
+from datetime import datetime, timedelta
+import asyncio
 import os
 from html import escape
+import aiohttp
 from aiohttp.web import Request, Response, FileResponse, StreamResponse, \
     WebSocketResponse
 from nrrd_twitch_bot import Dispatcher, BasePlugin
@@ -12,23 +16,45 @@ class ChatOverlay(BasePlugin):
     """An OBS Overlay for twitch chat
     """
 
-    async def do_privmsg(self, message: Dict, dispatcher: Dispatcher) -> None:
-        """Add emotes to the
+    def __init__(self, logger: Logger):
+        super().__init__(logger)
+        self.user_cache = {}
+        self.pronouns = load_pronouns(self.logger)
 
-        :param message: Websockets privmsg dictionary, with all tags as Key/Value
-            pairs, plus the 'nickname' key, and the 'msg_text' key
+    async def do_privmsg(self, message: Dict, dispatcher: Dispatcher) -> None:
+        """Get emotes and pronouns before forwarding the chat message to the
+        OBS overlay via the websocket queue
+
+        :param message: Twitch chat privmsg dictionary, with all tags as
+            Key/Value pairs, plus the 'nickname' key, and the 'msg_text' key
+        :param dispatcher: The dispatcher object to send messages back to chat
         """
         message['msg_type'] = 'privmsg'
         message = emote_replacement(message)
+        message = await self.get_pronouns(message)
         self.logger.debug(f"chat_overlay.plugin.py:  {message}")
         await self.websocket_queue.put(message)
 
     async def do_clearchat(self, message: Dict, dispatcher: Dispatcher) -> None:
+        """Forward clearchat messages to the OBS overlay via the websocket
+        queue
+
+        :param message: Twitch chat clearchat dictionary, with all tags as
+            Key/Value pairs, plus the 'nickname' key, and the 'msg_text' key
+        :param dispatcher: The dispatcher object to send messages back to chat
+        """
         message['msg_type'] = 'clearchat'
         self.logger.debug(f"chat_overlay.plugin.py: {message}")
         await self.websocket_queue.put(message)
 
     async def do_clearmsg(self, message: Dict, dispatcher: Dispatcher) -> None:
+        """Forward clearmsg messages to the OBS overlay via the websocket
+        queue
+
+        :param message: Twitch chat clearmsg dictionary, with all tags as
+            Key/Value pairs, plus the 'nickname' key, and the 'msg_text' key
+        :param dispatcher: The dispatcher object to send messages back to chat
+        """
         message['msg_type'] = 'clearmsg'
         self.logger.debug(f"chat_overlay.plugin.py: {message}")
         await self.websocket_queue.put(message)
@@ -64,6 +90,53 @@ class ChatOverlay(BasePlugin):
         :return: The WebSocket response
         """
         return await self._websocket_handler(request)
+
+    async def get_pronouns(self, message: Dict) -> Dict:
+        """Get a user's pronouns from the alejo.io service
+
+        :param message:
+        :return:
+        """
+        nickname = message['nickname']
+        self.logger.debug(f"chat_overlay.plugin.py: looking up pronouns for "
+                          f"user {nickname}")
+        if self.user_cache.get(nickname):
+            five_minutes = timedelta(minutes=5)
+            time_diff = datetime.now() - self.user_cache[nickname][1]
+            if time_diff > five_minutes:
+                self.logger.debug(f"chat_overlay.plugin.py: cache expired for "
+                                  f"{nickname}, refreshing")
+                await self.lookup_pronouns(nickname)
+                return await self.get_pronouns(message)
+            else:
+                pronouns = self.user_cache[nickname][0]
+                self.logger.debug(f"chat_overlay.plugin.py: {nickname} found "
+                                  f"with pronouns {pronouns}")
+        else:
+            self.logger.debug(f"chat_overlay.plugin.py: user {nickname} not "
+                              f"found in cache")
+            await self.lookup_pronouns(nickname)
+            return await self.get_pronouns(message)
+        message['pronouns'] = pronouns
+        return message
+
+    async def lookup_pronouns(self, nickname: str) -> None:
+        """Lookup a user's pronouns on the alejo.io service and add them to
+        the cache
+
+        :param nickname: The user's nickname in chat (not the display name)
+        """
+        self.logger.debug(f"chat_overlay.plugin.py: Loading pronouns for user "
+                          f"{nickname}")
+        user_pronouns = await async_load_pronouns(f"users/{nickname}",
+                                                  self.logger)
+        if user_pronouns:
+            # A list is returned, although only one pronoun set is linked to
+            # the user
+            pronoun_id = user_pronouns[0]['pronoun_id']
+            self.user_cache[nickname] = (self.pronouns[pronoun_id], datetime.now())
+        else:
+            self.user_cache[nickname] = (None, datetime.now())
 
 
 def emote_replacement(message: Dict) -> Dict:
@@ -106,3 +179,36 @@ def emote_replacement(message: Dict) -> Dict:
         # Escape HTML characters in the whole message instead
         message['msg_text'] = escape(message['msg_text'], quote=True)
     return message
+
+
+def load_pronouns(logger: Logger) -> Dict:
+    """Load the sets of pronouns from the alejo.io service
+
+    :return:
+    """
+    pronouns = asyncio.run(async_load_pronouns('pronouns', logger))
+    if pronouns:
+        logger.debug(f"chat_overlay.plugin.py: got {len(pronouns)} back from "
+                     f"alejo.io pronoun list")
+        pronouns = {x['name']: x['display'] for x in pronouns}
+    return pronouns
+
+
+async def async_load_pronouns(path: str, logger: Logger) -> List:
+    """Load the sets of pronouns from the alejo.io service
+
+    :return:
+    """
+    headers = {'Accept': 'application/json'}
+    async with aiohttp.ClientSession(headers=headers) as session:
+        async with session.get(f"https://pronouns.alejo.io/api/{path}") \
+                as resp:
+            logger.debug(f"chat_overlay.plugin.py: got status {resp.status} "
+                         f"from alejo.io pronoun service")
+            if resp.status == 200:
+                pronoun_response = await resp.json()
+                logger.debug(f"chat_overlay.plugin.py: got {pronoun_response} "
+                             f"from alejo.io service")
+            else:
+                pronoun_response = None
+    return pronoun_response

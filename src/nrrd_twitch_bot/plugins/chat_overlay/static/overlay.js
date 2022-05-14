@@ -1,17 +1,37 @@
 function add_chat_msg(chat_msg) {
-    document.getElementById("chat_overlay").
-    insertAdjacentHTML("beforeend",
-    `<div class="chat_message ${chat_msg["user-id"]}" id="${chat_msg.id}">
-        <div class="display_name">
-            <p class="display_name" style="color:${chat_msg.color}">
-                ${chat_msg["display-name"]}:
-            </p>
-        </div>
-        <div class="msg_text">
-            <p class="msg_text">${chat_msg.msg_text}</p>
-        </div>
-    </div>
-    `);
+    // Start with getting the overlay
+    overlay = document.getElementById('chat_overlay');
+    // Create the overall containing div
+    msg_div = document.createElement('div');
+    msg_div.id = chat_msg.id;
+    msg_div.className = `chat_message ${chat_msg.id}`;
+    // Add the Username and pronoun details
+    name_div = document.createElement('div');
+    name_div.className = 'display_name';
+    name_p = document.createElement('p');
+    name_p.className = 'display_name';
+    name_p.style = `color:${chat_msg.color}`;
+    name_text = document.createTextNode(`${chat_msg['display-name']}`);
+    name_p.appendChild(name_text);
+    name_div.appendChild(name_p);
+    if (chat_msg.pronouns !== null) {
+        pronoun_p = document.createElement('p');
+        pronoun_p.className = 'pronoun_tag';
+        pronoun_text = document.createTextNode(`(${chat_msg.pronouns})`);
+        pronoun_p.appendChild(pronoun_text);
+        name_div.appendChild(pronoun_p);
+    }
+    msg_div.appendChild(name_div);
+    // Main message text
+    text_div = document.createElement('div');
+    text_div.className = 'msg_text';
+    text_p = document.createElement('p');
+    text_p.className = 'msg_text';
+    text_p.innerHTML = `${chat_msg.msg_text}`
+    text_div.appendChild(text_p);
+    msg_div.appendChild(text_div);
+    // Finally add the message to the overlay
+    overlay.appendChild(msg_div);
 }
 
 function clear_out_of_bounds() {

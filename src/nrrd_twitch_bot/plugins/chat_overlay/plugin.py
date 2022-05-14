@@ -18,38 +18,8 @@ class ChatOverlay(BasePlugin):
         :param message: Websockets privmsg dictionary, with all tags as Key/Value
             pairs, plus the 'nickname' key, and the 'msg_text' key
         """
-        # Escape HTML characters
-        message['msg_text'] = escape(message['msg_text'], quote=True)
-        # Replace emote text with emote images
-        if message.get('emotes'):
-            # multiple emotes are / separated but don't replace them straight
-            # away
-            emotes = message['emotes'].split('/')
-            emote_list = []
-            for emote in emotes:
-                # The CDN UUID of the emote and the emote location are :
-                # separated
-                emote_code = emote.split(':')[0]
-                emote_url = f"<img src='https://static-cdn.jtvnw.net/" \
-                            f"emoticons/v2/{emote_code}/default/light/1.0' />"
-                # An emote may be repeated multiple times, positions are ,
-                # separated. But we only need the first one to work out the
-                # emote text
-                emote_markers = emote.split(':')[1].split(',')[0]
-                # Finally, the start and the end markers are - separated but
-                # for python slicing we need to add 1 to the end marker
-                emote_start = int(emote_markers.split('-')[0])
-                emote_end = int(emote_markers.split('-')[1]) + 1
-                emote_word = message['msg_text'][emote_start:emote_end]
-                emote_list.append((emote_word, emote_url))
-            # Now we replace the emote_words with the emote_urls, starting
-            # with the longest
-            for emote_word, emote_url in sorted(emote_list,
-                                                key=lambda x: len(x[0]),
-                                                reverse=True):
-                message['msg_text'] = message['msg_text'].replace(emote_word,
-                                                                  emote_url)
         message['msg_type'] = 'privmsg'
+        message = emote_replacement(message)
         self.logger.debug(f"chat_overlay.plugin.py:  {message}")
         await self.websocket_queue.put(message)
 
@@ -94,3 +64,45 @@ class ChatOverlay(BasePlugin):
         :return: The WebSocket response
         """
         return await self._websocket_handler(request)
+
+
+def emote_replacement(message: Dict) -> Dict:
+    """Escape HTML characters in the text and identify emotes in a message
+    replacing them with img tags to the emotes on Twitch's CDN
+
+    :param message: The message from the Dispatcher
+    :return: The message updated with escaped HTML and the IMG tags
+    """
+    # Identify emotes and placements, multiple emotes are split by '/',
+    # emote uuid and placements is separated by ':'. Multiple placements
+    # are split by ',' and the start and end placements are split by '-'
+    if message.get('emotes'):
+        emote_list = []
+        for emote in message.get('emotes').split('/'):
+            emote_uuid = emote.split(':')[0]
+            placements = emote.split(':')[1]
+            for placement in placements.split(','):
+                start_mark = placement.split('-')[0]
+                end_mark = placement.split('-')[1]
+                start_mark = int(start_mark)
+                # Add 1 to the end marker to make python slices work
+                end_mark = int(end_mark) + 1
+                emote_list.append((start_mark, end_mark, emote_uuid))
+        # Start working through the message, escaping HTML inbetween the
+        # emotes
+        end_section = 0
+        msg_parts = []
+        for emote in sorted(emote_list, key=lambda x: x[0]):
+            pre_text = escape(message['msg_text'][end_section:emote[0]],
+                              quote=True)
+            emote_html = f"<img src='https://static-cdn.jtvnw.net/" \
+                         f"emoticons/v2/{emote[2]}/default/light/1.0' />"
+            msg_parts += [pre_text, emote_html]
+            end_section = emote[1]
+        post_text = escape(message['msg_text'][end_section:], quote=True)
+        msg_parts.append(post_text)
+        message['msg_text'] = ''.join(msg_parts)
+    else:
+        # Escape HTML characters in the whole message instead
+        message['msg_text'] = escape(message['msg_text'], quote=True)
+    return message

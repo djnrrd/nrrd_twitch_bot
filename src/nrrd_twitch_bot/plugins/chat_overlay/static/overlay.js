@@ -14,6 +14,15 @@ function add_chat_msg(chat_msg) {
     `);
 }
 
+function clear_out_of_bounds() {
+    let chat_overlay = document.getElementById("chat_overlay");
+    if (chat_overlay.getBoundingClientRect().y < 0) {
+        console.log(chat_overlay.getBoundingClientRect().y);
+        chat_messages = chat_overlay.getElementsByClassName("chat_message");
+        chat_overlay.removeChild(chat_messages[0]);
+    }
+}
+
 function delete_chat_messages(chat_msg) {
     if (chat_msg.username  == "") {
         document.getElementById("chat_overlay").innerHTML = "";
@@ -38,6 +47,7 @@ function msg_handler(msg) {
     switch(chat_msg.msg_type) {
         case "privmsg":
             add_chat_msg(chat_msg);
+            clear_out_of_bounds();
             break;
         case "clearchat":
             delete_chat_messages(chat_msg);

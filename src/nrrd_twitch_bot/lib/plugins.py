@@ -1,16 +1,19 @@
 """Load plugins from the config file and import them
 """
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Union, TYPE_CHECKING
 from asyncio import PriorityQueue, create_task
 from logging import Logger
 from inspect import getmembers, isclass
 import os
 import sys
+import json
 import importlib
 import importlib.util
 from aiohttp.web import Request, WebSocketResponse
 from appdirs import user_data_dir
 from .config import load_config
+if TYPE_CHECKING:
+    from .dispatcher import Dispatcher
 
 
 class BasePlugin:
@@ -20,7 +23,8 @@ class BasePlugin:
     :param logger: A logger object
     """
     def __init__(self, logger: Logger) -> None:
-        self.websocket_queue = PriorityQueue()
+        self.websocket_queue: PriorityQueue = PriorityQueue()
+        self.dispatcher: Union[Dispatcher, None] = None
         self.logger = logger
 
     async def send_web_socket(self, message: Union[List, Dict, str, bytes]):
@@ -28,6 +32,11 @@ class BasePlugin:
 
         :param message: The message to send to the websockets
         """
+        # If multiple messages are in the queue with the same priority,
+        # the values are compared, which cannot be done with dict objects,
+        # so do a conversion to a JSON string here.
+        if isinstance(message, (list, dict)):
+            message = json.dumps(message)
         await self.websocket_queue.put((0, message))
 
     async def _websocket_handler(self, request: Request) -> WebSocketResponse:
@@ -61,8 +70,6 @@ class BasePlugin:
             message = await self.websocket_queue.get()
             if isinstance(message, str):
                 await ws.send_str(message)
-            elif isinstance(message, (list, dict)):
-                await ws.send_json(message)
             else:
                 await ws.send_bytes(message)
             self.websocket_queue.task_done()

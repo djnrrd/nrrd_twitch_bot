@@ -12,7 +12,7 @@ class ChatCommands(BasePlugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    async def do_privmsg(self, message: Dict, dispatcher: Dispatcher) -> None:
+    async def do_privmsg(self, message: Dict) -> None:
         """Log the message dictionary from the dispatcher to the logger object
 
         :param message: Websockets privmsg dictionary, with all tags as
@@ -27,7 +27,7 @@ class ChatCommands(BasePlugin):
         response = self.chat_commands(command)
         if response:
             self.logger.debug(f"chat_command: response is {response}")
-            asyncio.create_task(dispatcher.chat_send(response))
+            asyncio.create_task(self.dispatcher.chat_send(response))
 
     def chat_commands(self, command: str):
         """Return the response to the chat commands

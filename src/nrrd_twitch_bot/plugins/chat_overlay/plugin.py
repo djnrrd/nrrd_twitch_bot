@@ -21,7 +21,7 @@ class ChatOverlay(BasePlugin):
         self.user_cache = {}
         self.pronouns = load_pronouns(self.logger)
 
-    async def do_privmsg(self, message: Dict, dispatcher: Dispatcher) -> None:
+    async def do_privmsg(self, message: Dict) -> None:
         """Get emotes and pronouns before forwarding the chat message to the
         OBS overlay via the websocket queue
 
@@ -33,9 +33,9 @@ class ChatOverlay(BasePlugin):
         message = emote_replacement(message)
         message = await self.get_pronouns(message)
         self.logger.debug(f"chat_overlay.plugin.py:  {message}")
-        await self.websocket_queue.put(message)
+        await self.send_web_socket(message)
 
-    async def do_clearchat(self, message: Dict, dispatcher: Dispatcher) -> None:
+    async def do_clearchat(self, message: Dict) -> None:
         """Forward clearchat messages to the OBS overlay via the websocket
         queue
 
@@ -45,9 +45,9 @@ class ChatOverlay(BasePlugin):
         """
         message['msg_type'] = 'clearchat'
         self.logger.debug(f"chat_overlay.plugin.py: {message}")
-        await self.websocket_queue.put(message)
+        await self.send_web_socket(message)
 
-    async def do_clearmsg(self, message: Dict, dispatcher: Dispatcher) -> None:
+    async def do_clearmsg(self, message: Dict) -> None:
         """Forward clearmsg messages to the OBS overlay via the websocket
         queue
 
@@ -57,7 +57,7 @@ class ChatOverlay(BasePlugin):
         """
         message['msg_type'] = 'clearmsg'
         self.logger.debug(f"chat_overlay.plugin.py: {message}")
-        await self.websocket_queue.put(message)
+        await self.send_web_socket(message)
 
     async def http_handler(self, request: Request) \
             -> Union[Response, FileResponse, StreamResponse]:

@@ -29,6 +29,8 @@ class Dispatcher:
         self.logger = logger
         self.plugins = plugins
         self._process_queue: bool = True
+        for plugin in self.plugins:
+            plugin.dispatcher = self
 
     async def run(self) -> None:
         """Run the dispatcher queue
@@ -115,7 +117,7 @@ class Dispatcher:
         futures = []
         for plugin in self.plugins:
             if hasattr(plugin, 'do_privmsg'):
-                futures.append(plugin.do_privmsg(tag_dict, self))
+                futures.append(plugin.do_privmsg(tag_dict))
         await asyncio.gather(*futures)
 
     async def _send_clearchat(self, message: str) -> None:
@@ -134,7 +136,7 @@ class Dispatcher:
         futures = []
         for plugin in self.plugins:
             if hasattr(plugin, 'do_clearchat'):
-                futures.append(plugin.do_clearchat(tag_dict, self))
+                futures.append(plugin.do_clearchat(tag_dict))
         await asyncio.gather(*futures)
 
     async def _send_clearmsg(self, message: str) -> None:
@@ -151,5 +153,5 @@ class Dispatcher:
         futures = []
         for plugin in self.plugins:
             if hasattr(plugin, 'do_clearmsg'):
-                futures.append(plugin.do_clearmsg(tag_dict, self))
+                futures.append(plugin.do_clearmsg(tag_dict))
         await asyncio.gather(*futures)

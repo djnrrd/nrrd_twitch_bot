@@ -29,6 +29,8 @@ class Dispatcher:
         self.logger = logger
         self.plugins = plugins
         self._process_queue: bool = True
+        self.user_state: Dict = {}
+        self.room_state: Dict = {}
         for plugin in self.plugins:
             plugin.dispatcher = self
 
@@ -55,12 +57,16 @@ class Dispatcher:
             # It's a priority queue, so get just the message
             message = message[1]
             self.logger.debug(f"dispatcher.py: message: {message}")
-            if f"PRIVMSG #" in message:
+            if 'PRIVMSG #' in message:
                 asyncio.create_task(self._send_privmsg(message))
-            elif f"CLEARCHAT #" in message:
+            elif 'CLEARCHAT #' in message:
                 asyncio.create_task(self._send_clearchat(message))
-            elif f"CLEARMSG #" in message:
+            elif 'CLEARMSG #' in message:
                 asyncio.create_task(self._send_clearmsg(message))
+            elif 'ROOMSTATE #' in message:
+                asyncio.create_task(self._send_roomstate(message))
+            elif 'USERSTATE #' in message:
+                asyncio.create_task(self._send_userstate(message))
             self.chat_rcv_queue.task_done()
 
     async def chat_send(self, message: str) -> None:
@@ -154,4 +160,38 @@ class Dispatcher:
         for plugin in self.plugins:
             if hasattr(plugin, 'do_clearmsg'):
                 futures.append(plugin.do_clearmsg(tag_dict))
+        await asyncio.gather(*futures)
+
+    async def _send_roomstate(self, message: str) -> None:
+        """Send the roomstate messages to all the plugins that implement
+        do_roomstate, and update the Dispatcher with the roomstate info
+
+        :param message: The raw message as received from the websockets queue
+        """
+        tag_dict, irc_user_server, command_text = \
+            self._split_message(message, 'ROOMSTATE')
+        self.room_state = tag_dict
+        self.logger.debug(f"dispatcher.py: _send_roomstate: tag_dict"
+                          f" {tag_dict}")
+        futures = []
+        for plugin in self.plugins:
+            if hasattr(plugin, 'do_roomstate'):
+                futures.append(plugin.do_roomstate(tag_dict))
+        await asyncio.gather(*futures)
+
+    async def _send_userstate(self, message: str) -> None:
+        """Send the userstate messages to all the plugins that implement
+        do_userstate, and update the Dispatcher with the userstate info
+
+        :param message: The raw message as received from the websockets queue
+        """
+        tag_dict, irc_user_server, command_text = \
+            self._split_message(message, 'USERSTATE')
+        self.user_state = tag_dict
+        self.logger.debug(f"dispatcher.py: _send_userstate: tag_dict"
+                          f" {tag_dict}")
+        futures = []
+        for plugin in self.plugins:
+            if hasattr(plugin, 'do_userstate'):
+                futures.append(plugin.do_userstate(tag_dict))
         await asyncio.gather(*futures)

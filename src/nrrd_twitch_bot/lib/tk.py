@@ -180,14 +180,15 @@ class OptionsWindow(tk.Toplevel):
         """
         logger = self.master.logger
         idx = event.widget.curselection()
-        option = event.widget.get(idx)
-        if option == 'Twitch Login':
-            option_frame = TwitchLogin(logger, self.options_action)
-        elif option == 'Test Option':
-            option_frame = TestOption(self.options_action)
-        else:
-            option_frame = tk.Frame()
-        option_frame.grid(column=0, row=0, sticky='nsew')
+        if idx:
+            option = event.widget.get(idx)
+            if option == 'Twitch Login':
+                option_frame = TwitchLogin(logger, self.options_action)
+            elif option == 'Test Option':
+                option_frame = TestOption(self.options_action)
+            else:
+                option_frame = tk.Frame()
+            option_frame.grid(column=0, row=0, sticky='nsew')
 
 
 class OptionsFrame(tk.Frame):

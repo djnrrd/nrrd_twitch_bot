@@ -271,6 +271,8 @@ class TwitchLogin(tk.Frame):
         # Variables for the form elements
         self.twitch_username = tk.StringVar()
         self.twitch_channel = tk.StringVar()
+        self.twitch_client_id = tk.StringVar()
+        self.twitch_client_secret = tk.StringVar()
         self.oauth_token = tk.StringVar()
         # Load values from config
         self.config = self._load_config_values()
@@ -285,8 +287,10 @@ class TwitchLogin(tk.Frame):
         self.grid_rowconfigure(1, weight=1)
         self.grid_rowconfigure(2, weight=0)
         self.grid_rowconfigure(3, weight=0)
-        self.grid_rowconfigure(4, weight=1)
+        self.grid_rowconfigure(4, weight=0)
         self.grid_rowconfigure(5, weight=0)
+        self.grid_rowconfigure(6, weight=1)
+        self.grid_rowconfigure(7, weight=0)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
@@ -301,6 +305,13 @@ class TwitchLogin(tk.Frame):
         self.channel_label = tk.Label(self, text='Twitch channel:')
         self.channel_box = tk.Entry(self, name='twitch_channel',
                                     textvariable=self.twitch_channel)
+        self.client_id_label = tk.Label(self, text='Twitch Client ID:')
+        self.client_id_box = tk.Entry(self, name='twitch_client_id',
+                                      textvariable=self.twitch_client_id)
+        self.client_secret_label = tk.Label(self, text='Twitch Client Secret:')
+        self.client_secret_box = \
+            tk.Entry(self, name='twitch_client_secret',
+                     textvariable=self.twitch_client_secret)
         self.oauth_label = tk.Label(self, text='OAuth token:')
         self.oauth_val_label = tk.Label(self, textvariable=self.oauth_token)
         self.get_token_btn = tk.Button(self, text='Get new OAuth Token',
@@ -315,10 +326,15 @@ class TwitchLogin(tk.Frame):
         self.user_box.grid(row=1, column=1, sticky='ws', padx=5, pady=5)
         self.channel_label.grid(row=2, column=0, sticky='e', padx=5, pady=5)
         self.channel_box.grid(row=2, column=1, sticky='w', padx=5, pady=5)
-        self.oauth_label.grid(row=3, column=0, sticky='ne', padx=5, pady=5)
-        self.oauth_val_label.grid(row=3, column=1, sticky='nw', padx=5, pady=5)
-        self.get_token_btn.grid(row=4, column=1, sticky='nw', padx=5, pady=5)
-        self.save_config_btn.grid(row=5, column=1, sticky='se', padx=5, pady=5)
+        self.client_id_label.grid(row=3, column=0, sticky='e', padx=5, pady=5)
+        self.client_id_box.grid(row=3, column=1, sticky='w', padx=5, pady=5)
+        self.client_secret_label.grid(row=4, column=0, sticky='e', padx=5,
+                                      pady=5)
+        self.client_secret_box.grid(row=4, column=1, sticky='w', padx=5, pady=5)
+        self.oauth_label.grid(row=5, column=0, sticky='ne', padx=5, pady=5)
+        self.oauth_val_label.grid(row=5, column=1, sticky='nw', padx=5, pady=5)
+        self.get_token_btn.grid(row=6, column=1, sticky='nw', padx=5, pady=5)
+        self.save_config_btn.grid(row=7, column=1, sticky='se', padx=5, pady=5)
 
     def get_oauth_token(self) -> None:
         """Start the Twitch OAuth Token process
@@ -334,6 +350,8 @@ class TwitchLogin(tk.Frame):
         config = load_config(self.logger)
         self.twitch_username.set(config['twitch']['username'])
         self.twitch_channel.set(config['twitch']['channel'])
+        self.twitch_client_id.set(config['twitch']['client_id'])
+        self.twitch_client_secret.set(config['twitch']['client_secret'])
         self.oauth_token.set(config['twitch']['oauth_token'])
         return config
 
@@ -342,6 +360,8 @@ class TwitchLogin(tk.Frame):
         """
         self.config['twitch']['username'] = self.twitch_username.get()
         self.config['twitch']['channel'] = self.twitch_channel.get()
+        self.config['twitch']['client_id'] = self.twitch_client_id.get()
+        self.config['twitch']['client_secret'] = self.twitch_client_secret.get()
         self.config['twitch']['oauth_token'] = self.oauth_token.get()
         save_config(self.config, self.logger)
 

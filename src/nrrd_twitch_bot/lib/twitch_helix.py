@@ -37,6 +37,17 @@ async def get_emote_sets(emote_set_ids: List[str], logger: Logger) -> List:
     oauth_token = config['twitch']['oauth_token']
     client_id = config['twitch']['client_id']
     async with TwitchHelix(client_id, oauth_token) as twitch:
-        futures = [twitch.get_emote_set(x) for x in emote_set_ids]
-        emote_sets = await asyncio.gather(*futures)
+        emote_sets = []
+        start_mark = 0
+        # Make sure we don't fall foul of rate limiting by doing 10 requests
+        # at a time
+        for end_mark in range(10, len(emote_set_ids), 10):
+            futures = [twitch.get_emote_set(x) for x in
+                       emote_set_ids[start_mark:end_mark]]
+            emote_sets += await asyncio.gather(*futures)
+            start_mark = end_mark
+        # And the last one(s)
+        futures = [twitch.get_emote_set(x) for x in
+                   emote_set_ids[start_mark:]]
+        emote_sets += await asyncio.gather(*futures)
     return emote_sets

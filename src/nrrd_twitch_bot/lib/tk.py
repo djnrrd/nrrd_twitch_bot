@@ -342,7 +342,7 @@ class TwitchLogin(tk.Frame):
         # Disable button
         self.get_token_btn['state'] = 'disabled'
         # Update token
-        get_twitch_oauth_token(self.oauth_token)
+        get_twitch_oauth_token(self.oauth_token, self.twitch_client_id)
 
     def _load_config_values(self) -> ConfigParser:
         """Load the Twitch OAuth values from the config file

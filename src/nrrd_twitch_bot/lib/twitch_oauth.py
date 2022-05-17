@@ -8,25 +8,29 @@ import webbrowser
 from functools import partial
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlencode
-from nrrd_twitch_bot.conf.twitch import CLIENT_ID
 
 
-def get_twitch_oauth_token(oauth_label: tk.StringVar) -> None:
+def get_twitch_oauth_token(oauth_label: tk.StringVar, client_id: tk.StringVar) \
+        -> None:
     """Launch a web browser and web server to start the Twitch OAuth process
     and receive the returned token
 
     :param oauth_label: The TK StringVar object that stores the OAuth Token
         value
+    :param client_id: The TK StringVar object that stores the client ID value
     """
-    launch_browser()
+    launch_browser(client_id)
     start_web_server_thread(oauth_label)
 
 
-def launch_browser() -> None:
+def launch_browser(client_id: tk.StringVar) -> None:
     """Launch the user's web browser and take them to the Twitch OAuth page.
+
+    :param client_id: The TK StringVar object that stores the client ID value
     """
     base_url = 'https://id.twitch.tv/oauth2/authorize'
-    params = {'client_id': CLIENT_ID, 'redirect_uri': 'http://localhost:8000',
+    params = {'client_id': client_id.get(),
+              'redirect_uri': 'http://localhost:8000',
               'response_type': 'token',
               'scope': 'channel:moderate chat:edit chat:read '
                        'channel_commercial channel_editor'}

@@ -68,10 +68,10 @@ class BasePlugin:
         """
         while not ws.closed:
             message = await self.websocket_queue.get()
-            if isinstance(message, str):
-                await ws.send_str(message)
+            if isinstance(message[1], str):
+                await ws.send_str(message[1])
             else:
-                await ws.send_bytes(message)
+                await ws.send_bytes(message[1])
             self.websocket_queue.task_done()
 
 

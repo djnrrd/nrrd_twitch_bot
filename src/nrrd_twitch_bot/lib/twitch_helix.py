@@ -35,7 +35,7 @@ async def get_emote_sets(emote_set_ids: List[str], logger: Logger) -> List:
     """
     config = load_config(logger)
     oauth_token = config['twitch']['oauth_token']
-    client_id = '6vhqfh4gs5ao0jcvss9ft1248kcaqq'
+    client_id = config['twitch']['client_id']
     async with TwitchHelix(client_id, oauth_token) as twitch:
         futures = [twitch.get_emote_set(x) for x in emote_set_ids]
         emote_sets = await asyncio.gather(*futures)

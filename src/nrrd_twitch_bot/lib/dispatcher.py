@@ -4,9 +4,9 @@ from typing import List, Callable, Any, Dict, Tuple
 from logging import Logger
 import asyncio
 from asyncio import PriorityQueue
-from functools import wraps
-from .twitch_chat import TwitchChat
+import re
 from .plugins import BasePlugin
+from .twitch_helix import get_emote_sets
 
 
 class Dispatcher:
@@ -29,7 +29,10 @@ class Dispatcher:
         self.logger = logger
         self.plugins = plugins
         self._process_queue: bool = True
+        self.user: str = ''
         self.user_state: Dict = {}
+        self.user_emotes: Dict = {}
+        self.room: str = ''
         self.room_state: Dict = {}
         for plugin in self.plugins:
             plugin.dispatcher = self
@@ -67,15 +70,45 @@ class Dispatcher:
                 asyncio.create_task(self._send_roomstate(message))
             elif 'USERSTATE #' in message:
                 asyncio.create_task(self._send_userstate(message))
+            elif 'tmi.twitch.tv 353' in message:
+                self._update_user_room(message)
             self.chat_rcv_queue.task_done()
+
+    def _update_user_room(self, message: str) -> None:
+        """Use the RPL_NAMREPLY reply to joining the IRC room to determine
+        the user and room name.  This message may happen twice if there are
+        existing users, however the second one will have the correct user
+        details, so we might as well let it run twitch
+
+        :param message: the RPL_NAMREPLY reply message
+        """
+        parts = message.split(':')
+        self.user = parts[-1]
+        self.room = parts[-2].split()[-1]
 
     async def chat_send(self, message: str) -> None:
         """Send messages back through the chat queue for the twitch chat
-        service
+        service. This does not get echoed back from Twitch so a mock message
+        needs to be created and sent back into the Queue
 
         :param message: The message to send back to chat.
         """
         asyncio.create_task(self.chat_send_queue.put((0, message)))
+        tags = [f"{x}={y}" for x, y in self.user_state.items()]
+        emotes = []
+        for emote, emote_id in self.user_emotes.items():
+            matches = [m.start() for m in re.finditer(re.escape(emote),
+                                                      message)]
+            if matches:
+                markers = ','.join([f"{x}-{len(emote) - 1 + x}" for x in
+                                    matches])
+                emotes.append(f"{emote_id}:{markers}")
+        emotes = '/'.join(emotes)
+        tags.append(f"emotes={emotes}")
+        fake_message = f"@{';'.join(tags)}:{self.user}!{self.user}@" \
+                       f"{self.user}.tmi.twitch.tv PRIVMSG #{self.room} :" \
+                       f"{message}"
+        await self.chat_rcv_queue.put((0, fake_message))
 
     @staticmethod
     def _split_message(message: str, command: str) -> Tuple[Dict, str, str]:
@@ -190,8 +223,23 @@ class Dispatcher:
         self.user_state = tag_dict
         self.logger.debug(f"dispatcher.py: _send_userstate: tag_dict"
                           f" {tag_dict}")
+        asyncio.create_task(self._update_user_emotes(tag_dict))
         futures = []
         for plugin in self.plugins:
             if hasattr(plugin, 'do_userstate'):
                 futures.append(plugin.do_userstate(tag_dict))
         await asyncio.gather(*futures)
+
+    async def _update_user_emotes(self, user_state: Dict) -> None:
+        """Update the user's locally stored available emotes
+
+        :param user_state:
+        :return:
+        """
+        emote_set_ids = user_state['emote-sets'].split(',')
+        emote_sets = await get_emote_sets(emote_set_ids, self.logger)
+        emote_dict = {}
+        for emote_set in emote_sets:
+            tmp_dict = {x['name']: x['id'] for x in emote_set}
+            emote_dict.update(tmp_dict)
+        self.user_emotes.update(emote_dict)

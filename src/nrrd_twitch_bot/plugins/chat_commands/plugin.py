@@ -36,7 +36,8 @@ class ChatCommands(BasePlugin):
         :return: the command response
         """
         commands = {'oar': 'Hit him with an oar!',
-                    'catbutt': 'DJ Has cas and a web camera. How did you think '
-                               'this would end?'}
+                    'catbutt': 'djnrrdCats DJ Has cats and a web camera. '
+                               'djnrrdSnarf How did you think this would end? '
+                               'djnrrdOrko <3 <3'}
         return commands.get(command)
 

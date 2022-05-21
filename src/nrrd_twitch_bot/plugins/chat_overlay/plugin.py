@@ -9,7 +9,7 @@ from html import escape
 import aiohttp
 from aiohttp.web import Request, Response, FileResponse, StreamResponse, \
     WebSocketResponse
-from nrrd_twitch_bot import Dispatcher, BasePlugin
+from nrrd_twitch_bot import BasePlugin
 
 
 class ChatOverlay(BasePlugin):
@@ -106,8 +106,8 @@ class ChatOverlay(BasePlugin):
             if time_diff > five_minutes:
                 self.logger.debug(f"chat_overlay.plugin.py: cache expired for "
                                   f"{nickname}, refreshing")
-                await self.lookup_pronouns(nickname)
-                return await self.get_pronouns(message)
+                asyncio.create_task(self.lookup_pronouns(nickname))
+                pronouns = self.user_cache[nickname][0]
             else:
                 pronouns = self.user_cache[nickname][0]
                 self.logger.debug(f"chat_overlay.plugin.py: {nickname} found "
@@ -115,8 +115,8 @@ class ChatOverlay(BasePlugin):
         else:
             self.logger.debug(f"chat_overlay.plugin.py: user {nickname} not "
                               f"found in cache")
-            await self.lookup_pronouns(nickname)
-            return await self.get_pronouns(message)
+            asyncio.create_task(self.lookup_pronouns(nickname))
+            pronouns = None
         message['pronouns'] = pronouns
         return message
 
@@ -134,7 +134,8 @@ class ChatOverlay(BasePlugin):
             # A list is returned, although only one pronoun set is linked to
             # the user
             pronoun_id = user_pronouns[0]['pronoun_id']
-            self.user_cache[nickname] = (self.pronouns[pronoun_id], datetime.now())
+            self.user_cache[nickname] = (self.pronouns[pronoun_id],
+                                         datetime.now())
         else:
             self.user_cache[nickname] = (None, datetime.now())
 
@@ -200,15 +201,19 @@ async def async_load_pronouns(path: str, logger: Logger) -> List:
     :return:
     """
     headers = {'Accept': 'application/json'}
-    async with aiohttp.ClientSession(headers=headers) as session:
-        async with session.get(f"https://pronouns.alejo.io/api/{path}") \
-                as resp:
-            logger.debug(f"chat_overlay.plugin.py: got status {resp.status} "
-                         f"from alejo.io pronoun service")
-            if resp.status == 200:
-                pronoun_response = await resp.json()
-                logger.debug(f"chat_overlay.plugin.py: got {pronoun_response} "
-                             f"from alejo.io service")
-            else:
-                pronoun_response = None
+    try:
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get(f"https://pronouns.alejo.io/api/{path}") \
+                    as resp:
+                logger.debug(f"chat_overlay.plugin.py: got status "
+                             f"{resp.status} from alejo.io pronoun service")
+                if resp.status == 200:
+                    pronoun_response = await resp.json()
+                    logger.debug(f"chat_overlay.plugin.py: got "
+                                 f"{pronoun_response} from alejo.io service")
+                else:
+                    pronoun_response = None
+    except aiohttp.ServerTimeoutError as e:
+        logger.info('Timed out connecting to pronouns.alejo.io')
+        pronoun_response = None
     return pronoun_response

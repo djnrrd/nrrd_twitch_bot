@@ -26,8 +26,15 @@ function add_chat_msg(chat_msg) {
     text_div = document.createElement('div');
     text_div.className = 'msg_text';
     text_p = document.createElement('p');
-    text_p.className = 'msg_text';
-    text_p.innerHTML = `${chat_msg.msg_text}`
+    if (chat_msg.msg_text.includes('ACTION')) {
+        text_p.className = 'msg_text slash_me';
+        msg_text = chat_msg.msg_text.slice(7, -1);
+        text_p.innerHTML = msg_text;
+    }
+    else {
+        text_p.className = 'msg_text';
+        text_p.innerHTML = `${chat_msg.msg_text}`;
+    }
     text_div.appendChild(text_p);
     msg_div.appendChild(text_div);
     // Finally add the message to the overlay

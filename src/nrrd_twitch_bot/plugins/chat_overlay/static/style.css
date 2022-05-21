@@ -24,6 +24,10 @@ p.msg_text {
   margin-bottom: 10px;
 }
 
+p.slash_me {
+  font-style: italic;
+}
+
 p.pronoun_tag {
   display: inline;
   font-size: 20px;

@@ -1,6 +1,6 @@
 """Dispatch messages between Twitch chat, plugins and websockets servers
 """
-from typing import List, Callable, Any, Dict, Tuple
+from typing import List, Dict, Tuple
 from logging import Logger
 import asyncio
 from asyncio import PriorityQueue
@@ -78,7 +78,7 @@ class Dispatcher:
         """Use the RPL_NAMREPLY reply to joining the IRC room to determine
         the user and room name.  This message may happen twice if there are
         existing users, however the second one will have the correct user
-        details, so we might as well let it run twitch
+        details, so we might as well let it run twice
 
         :param message: the RPL_NAMREPLY reply message
         """
@@ -112,11 +112,12 @@ class Dispatcher:
 
     @staticmethod
     def _split_message(message: str, command: str) -> Tuple[Dict, str, str]:
-        """Split the tags out from the received websockets frame
+        """Split the tags, user and message out from the received websockets
+        frame
 
         :param message: The websockets frame
-        :param command:
-        :return:
+        :param command: The IRC command to split the message on
+        :return: A dictionary of tags, the username and the message
         """
         tag_dict = {}
         # Find the command
@@ -233,8 +234,7 @@ class Dispatcher:
     async def _update_user_emotes(self, user_state: Dict) -> None:
         """Update the user's locally stored available emotes
 
-        :param user_state:
-        :return:
+        :param user_state: The tag dictionary from the USERSTATE message
         """
         emote_set_ids = user_state['emote-sets'].split(',')
         emote_sets = await get_emote_sets(emote_set_ids, self.logger)

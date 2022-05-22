@@ -2,23 +2,18 @@
 """
 from typing import Dict
 import asyncio
-from nrrd_twitch_bot import Dispatcher, BasePlugin
+from nrrd_twitch_bot import BasePlugin
 
 
 class ChatCommands(BasePlugin):
-    """An OBS Overlay for twitch chat
+    """A basic chat command bot
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     async def do_privmsg(self, message: Dict) -> None:
         """Log the message dictionary from the dispatcher to the logger object
 
         :param message: Websockets privmsg dictionary, with all tags as
             Key/Value pairs, plus the 'nickname' key, and the 'msg_text' key
-        :param dispatcher: The dispatcher object for sending messages back to
-            Twitch chat
         """
         if message['msg_text'][0] != '!':
             return
@@ -29,7 +24,8 @@ class ChatCommands(BasePlugin):
             self.logger.debug(f"chat_command: response is {response}")
             asyncio.create_task(self.dispatcher.chat_send(response))
 
-    def chat_commands(self, command: str):
+    @staticmethod
+    def chat_commands(command: str):
         """Return the response to the chat commands
 
         :param command: the extracted command
@@ -40,4 +36,3 @@ class ChatCommands(BasePlugin):
                                'djnrrdSnarf you know where this is going to '
                                'end up djnrrdOrko'}
         return commands.get(command)
-

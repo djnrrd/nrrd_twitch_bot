@@ -4,8 +4,8 @@ from typing import List, Optional, Type, Union
 from types import TracebackType
 from logging import Logger
 import asyncio
-from aiohttp import web, WSCloseCode
 import weakref
+from aiohttp import web, WSCloseCode
 from nrrd_twitch_bot.lib.plugins import BasePlugin
 
 

@@ -1,12 +1,12 @@
 """A module for setting up the logger and custom TK Scrolled Text log handler
 """
 from typing import Type, TYPE_CHECKING, Union
-if TYPE_CHECKING:
-    from .tk import TwitchBotLogApp
 import pathlib
 import logging
 from tkinter import END, Text
 from datetime import datetime
+if TYPE_CHECKING:
+    from .tk import TwitchBotLogApp
 
 
 def setup_logger(debug: bool = False,

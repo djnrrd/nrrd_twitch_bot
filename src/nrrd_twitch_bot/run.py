@@ -66,7 +66,7 @@ async def run_dispatcher(chat_rcv_queue: PriorityQueue,
 
 async def run_http(plugins: List[BasePlugin], logger: Logger) -> None:
     """Run the HTTP server
-    
+
     :param plugins: A list of plugin objects
     :param logger: A logger object
     """
@@ -94,7 +94,8 @@ async def shutdown(loop: asyncio.AbstractEventLoop, logger: Logger) \
     :param logger: A logger object
     """
     tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
-    [task.cancel() for task in tasks]
+    for task in tasks:
+        task.cancel()
     logger.debug(f"run.py: Cancelling {len(tasks)} outstanding tasks")
     await asyncio.gather(*tasks, return_exceptions=True)
     loop.stop()

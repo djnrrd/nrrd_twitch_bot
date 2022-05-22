@@ -14,12 +14,14 @@ from nrrd_twitch_bot import BasePlugin
 
 class ChatOverlay(BasePlugin):
     """An OBS Overlay for twitch chat
+
+    :param logger: A logger object
     """
 
     def __init__(self, logger: Logger):
         super().__init__(logger)
         self.user_cache = {}
-        self.pronouns = load_pronouns(self.logger)
+        self.pronouns = self.load_pronouns()
 
     async def do_privmsg(self, message: Dict) -> None:
         """Get emotes and pronouns before forwarding the chat message to the
@@ -27,7 +29,6 @@ class ChatOverlay(BasePlugin):
 
         :param message: Twitch chat privmsg dictionary, with all tags as
             Key/Value pairs, plus the 'nickname' key, and the 'msg_text' key
-        :param dispatcher: The dispatcher object to send messages back to chat
         """
         message['msg_type'] = 'privmsg'
         message = emote_replacement(message)
@@ -41,7 +42,6 @@ class ChatOverlay(BasePlugin):
 
         :param message: Twitch chat clearchat dictionary, with all tags as
             Key/Value pairs, plus the 'nickname' key, and the 'msg_text' key
-        :param dispatcher: The dispatcher object to send messages back to chat
         """
         message['msg_type'] = 'clearchat'
         self.logger.debug(f"chat_overlay.plugin.py: {message}")
@@ -53,7 +53,6 @@ class ChatOverlay(BasePlugin):
 
         :param message: Twitch chat clearmsg dictionary, with all tags as
             Key/Value pairs, plus the 'nickname' key, and the 'msg_text' key
-        :param dispatcher: The dispatcher object to send messages back to chat
         """
         message['msg_type'] = 'clearmsg'
         self.logger.debug(f"chat_overlay.plugin.py: {message}")
@@ -92,10 +91,12 @@ class ChatOverlay(BasePlugin):
         return await self._websocket_handler(request)
 
     async def get_pronouns(self, message: Dict) -> Dict:
-        """Get a user's pronouns from the alejo.io service
+        """Get a user's pronouns from the user cache, sending a task to get
+        them from the alejo.io service
 
-        :param message:
-        :return:
+
+        :param message: The PRIVMSG dictionary
+        :return: The PRIVMSG dictionary updated with the user's pronouns
         """
         nickname = message['nickname']
         self.logger.debug(f"chat_overlay.plugin.py: looking up pronouns for "
@@ -128,8 +129,7 @@ class ChatOverlay(BasePlugin):
         """
         self.logger.debug(f"chat_overlay.plugin.py: Loading pronouns for user "
                           f"{nickname}")
-        user_pronouns = await async_load_pronouns(f"users/{nickname}",
-                                                  self.logger)
+        user_pronouns = await self.async_load_pronouns(f"users/{nickname}")
         if user_pronouns:
             # A list is returned, although only one pronoun set is linked to
             # the user
@@ -138,6 +138,44 @@ class ChatOverlay(BasePlugin):
                                          datetime.now())
         else:
             self.user_cache[nickname] = (None, datetime.now())
+
+    def load_pronouns(self) -> Union[Dict, None]:
+        """Load the sets of pronouns from the alejo.io service
+
+        :return: The dictionary of pronoun keys and display formats
+        """
+        pronouns = asyncio.run(self.async_load_pronouns('pronouns'))
+        if pronouns:
+            self.logger.debug(
+                f"chat_overlay.plugin.py: got {len(pronouns)} back from "
+                f"alejo.io pronoun list")
+            pronouns = {x['name']: x['display'] for x in pronouns}
+        return pronouns
+
+    async def async_load_pronouns(self, path: str) -> List:
+        """Load the sets of pronouns from the alejo.io service
+
+        :return:
+        """
+        headers = {'Accept': 'application/json'}
+        try:
+            async with aiohttp.ClientSession(headers=headers) as session:
+                async with session.get(f"https://pronouns.alejo.io/api/{path}") \
+                        as resp:
+                    self.logger.debug(f"chat_overlay.plugin.py: got status "
+                                      f"{resp.status} from alejo.io pronoun "
+                                      f"service")
+                    if resp.status == 200:
+                        pronoun_response = await resp.json()
+                        self.logger.debug(f"chat_overlay.plugin.py: got "
+                                          f"{pronoun_response} from alejo.io "
+                                          f"service")
+                    else:
+                        pronoun_response = None
+        except aiohttp.ServerTimeoutError as e:
+            self.logger.info('Timed out connecting to pronouns.alejo.io')
+            pronoun_response = None
+        return pronoun_response
 
 
 def emote_replacement(message: Dict) -> Dict:
@@ -182,38 +220,7 @@ def emote_replacement(message: Dict) -> Dict:
     return message
 
 
-def load_pronouns(logger: Logger) -> Dict:
-    """Load the sets of pronouns from the alejo.io service
-
-    :return:
-    """
-    pronouns = asyncio.run(async_load_pronouns('pronouns', logger))
-    if pronouns:
-        logger.debug(f"chat_overlay.plugin.py: got {len(pronouns)} back from "
-                     f"alejo.io pronoun list")
-        pronouns = {x['name']: x['display'] for x in pronouns}
-    return pronouns
 
 
-async def async_load_pronouns(path: str, logger: Logger) -> List:
-    """Load the sets of pronouns from the alejo.io service
 
-    :return:
-    """
-    headers = {'Accept': 'application/json'}
-    try:
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(f"https://pronouns.alejo.io/api/{path}") \
-                    as resp:
-                logger.debug(f"chat_overlay.plugin.py: got status "
-                             f"{resp.status} from alejo.io pronoun service")
-                if resp.status == 200:
-                    pronoun_response = await resp.json()
-                    logger.debug(f"chat_overlay.plugin.py: got "
-                                 f"{pronoun_response} from alejo.io service")
-                else:
-                    pronoun_response = None
-    except aiohttp.ServerTimeoutError as e:
-        logger.info('Timed out connecting to pronouns.alejo.io')
-        pronoun_response = None
-    return pronoun_response
+

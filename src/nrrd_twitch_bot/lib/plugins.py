@@ -91,7 +91,7 @@ def _load_from_config(logger: Logger) -> List[str]:
 def _update_paths(logger: Logger) -> None:
     """Update the sys path with the plugin locations
 
-    :param logger:
+    :param logger: A logger object
     """
     logger.debug('plugins.py: Adding local plugin path')
     local_plugin_path = os.path.join(os.path.dirname(__file__), '..', 'plugins')

@@ -170,7 +170,7 @@ class TwitchChat:
 
     async def _process_rcv_queue(self) -> None:
         """Send messages received from the Twitch websockets server out to
-        the recieve queue.
+        the receive queue.
         """
         async for frame in self._session:
             # Messages may be multiline, split with '\r\n' and always have

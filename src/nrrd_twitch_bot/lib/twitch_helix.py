@@ -8,6 +8,13 @@ from .config import load_config
 
 
 class TwitchHelix(AsyncBaseWebAPI):
+    """Connect to the Twitch Helix API
+
+    This should be used with the Asynchronous context manager
+
+    :param client_id: Twitch Client ID string
+    :param oauth_token: Twitch OAUTH token
+    """
 
     def __init__(self, client_id: str, oauth_token: str) -> None:
         super().__init__('api.twitch.tv', '', '', secure=True)

@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import font as tk_font
 from tkinter import scrolledtext
 from nrrd_twitch_bot.lib.logger import setup_logger
-from nrrd_twitch_bot.lib.config import load_config, save_config
+from nrrd_twitch_bot.lib.config import load_default_config, save_default_config
 from nrrd_twitch_bot.lib.twitch_oauth import get_twitch_oauth_token
 from nrrd_twitch_bot.run import start_new_thread
 
@@ -348,7 +348,7 @@ class TwitchLogin(tk.Frame):
     def _load_config_values(self) -> ConfigParser:
         """Load the Twitch OAuth values from the config file
         """
-        config = load_config(self.logger)
+        config = load_default_config(self.logger)
         self.twitch_username.set(config['twitch']['username'])
         self.twitch_channel.set(config['twitch']['channel'])
         self.twitch_client_id.set(config['twitch']['client_id'])
@@ -364,7 +364,7 @@ class TwitchLogin(tk.Frame):
         self.config['twitch']['client_id'] = self.twitch_client_id.get()
         self.config['twitch']['client_secret'] = self.twitch_client_secret.get()
         self.config['twitch']['oauth_token'] = self.oauth_token.get()
-        save_config(self.config, self.logger)
+        save_default_config(self.config, self.logger)
 
 
 class TestOption(tk.Frame):

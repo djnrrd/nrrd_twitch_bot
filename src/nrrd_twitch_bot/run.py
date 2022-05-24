@@ -8,7 +8,7 @@ import threading
 from functools import partial
 from asyncio import PriorityQueue, Event
 from nrrd_twitch_bot.lib.twitch_chat import TwitchChat
-from nrrd_twitch_bot.lib.config import load_config
+from nrrd_twitch_bot.lib.config import load_default_config
 from nrrd_twitch_bot.lib.dispatcher import Dispatcher
 from nrrd_twitch_bot.lib.plugins import load_plugins, BasePlugin
 from nrrd_twitch_bot.lib.http_server import OverlayServer
@@ -37,7 +37,7 @@ async def run_chat(chat_rcv_queue: PriorityQueue,
     :param chat_send_queue: The queue for passing messages back to twitch chat
     :param logger: A logger object
     """
-    config = load_config(logger)
+    config = load_default_config(logger)
     oauth_token = config['twitch']['oauth_token']
     nickname = config['twitch']['username']
     channel = config['twitch']['channel']

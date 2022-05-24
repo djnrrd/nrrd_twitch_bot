@@ -2,7 +2,7 @@ from unittest import TestCase
 import os
 import logging
 from appdirs import user_config_dir
-from nrrd_twitch_bot.lib.config import load_config, check_config_dir
+from nrrd_twitch_bot.lib.config import load_default_config, check_config_dir
 
 APP_DIR = 'nrrd-twitch-bot'
 AUTHOR_DIR = 'djnrrd'
@@ -45,7 +45,7 @@ class TestConfigs(TestCase):
         os.rmdir(author_dir)
 
     def test_load_conf(self):
-        config = load_config(self.logger)
+        config = load_default_config(self.logger)
         self.assertTrue(config.has_section('twitch'))
         self.assertTrue(config.has_option('twitch', 'oauth_token'))
         self.assertTrue(config.has_option('twitch', 'channel'))
@@ -55,7 +55,7 @@ class TestConfigs(TestCase):
         config_dir = user_config_dir('nrrd-twitch-bot', 'djnrrd')
         config_file = os.path.join(config_dir, 'nrrd-twitch-bot.ini')
         author_dir = os.path.join(user_config_dir(), 'djnrrd')
-        config = load_config(self.logger)
+        config = load_default_config(self.logger)
         self.assertTrue(config.has_section('twitch'))
         self.assertTrue(config.has_option('twitch', 'oauth_token'))
         self.assertTrue(config.has_option('twitch', 'channel'))

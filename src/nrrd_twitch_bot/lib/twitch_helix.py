@@ -4,7 +4,7 @@ import asyncio
 from typing import List
 from logging import Logger
 from basewebapi.asyncbasewebapi import AsyncBaseWebAPI
-from .config import load_config
+from .config import load_default_config
 
 
 class TwitchHelix(AsyncBaseWebAPI):
@@ -40,7 +40,7 @@ async def get_emote_sets(emote_set_ids: List[str], logger: Logger) -> List:
     :param logger: A logger object
     :return: A list of Emotes
     """
-    config = load_config(logger)
+    config = load_default_config(logger)
     oauth_token = config['twitch']['oauth_token']
     client_id = config['twitch']['client_id']
     async with TwitchHelix(client_id, oauth_token) as twitch:

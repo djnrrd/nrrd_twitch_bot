@@ -11,7 +11,7 @@ import importlib
 import importlib.util
 from aiohttp.web import Request, WebSocketResponse
 from appdirs import user_data_dir
-from .config import load_config
+from .config import load_default_config
 if TYPE_CHECKING:
     from .dispatcher import Dispatcher
 
@@ -82,7 +82,7 @@ def _load_from_config(logger: Logger) -> List[str]:
     :return: The list of plugin names
     """
     logger.debug('plugins.py: Loading plugin list')
-    config = load_config(logger)
+    config = load_default_config(logger)
     plugins = config['plugins']['plugins']
     logger.debug(f"plugins.py: plugins list: {plugins}")
     return plugins.split(':')

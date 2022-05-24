@@ -43,11 +43,11 @@ def config_defaults(config: ConfigParser, logger: Logger) -> ConfigParser:
     config['twitch']['oauth_token'] = 'N/A'
     config.add_section('plugins')
     config['plugins']['plugins'] = 'chat_commands:chat_overlay'
-    save_config(config, logger)
+    save_default_config(config, logger)
     return config
 
 
-def load_config(logger: Logger) -> ConfigParser:
+def load_default_config(logger: Logger) -> ConfigParser:
     """Load the config file and return the ConfigParser object.
 
     If no config file is present the ConfigParser object would be "empty"
@@ -70,7 +70,7 @@ def load_config(logger: Logger) -> ConfigParser:
     return config
 
 
-def save_config(config: ConfigParser, logger: Logger) -> None:
+def save_default_config(config: ConfigParser, logger: Logger) -> None:
     """Save the config file to the user's local config directory.
 
     :param config: The ConfigParser object

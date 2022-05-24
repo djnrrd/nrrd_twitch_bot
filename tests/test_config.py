@@ -30,7 +30,7 @@ class TestConfigs(TestCase):
         return None
 
     def file_restore(self):
-        config_dir = check_config_dir(self.logger)
+        config_dir = check_config_dir()
         config_file = os.path.join(config_dir, INI_FILE)
         with open(config_file, 'w') as f:
             f.write(self.config_file_backup)

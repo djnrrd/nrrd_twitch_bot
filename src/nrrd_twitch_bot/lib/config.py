@@ -6,7 +6,7 @@ from configparser import ConfigParser
 from appdirs import user_config_dir
 
 
-def check_config_dir(logger: Logger) -> str:
+def check_config_dir() -> str:
     """Check if the config directories exist and create them if not.
 
     :param logger: A Logger object
@@ -14,15 +14,12 @@ def check_config_dir(logger: Logger) -> str:
     """
     config_dir = user_config_dir('nrrd-twitch-bot', 'djnrrd')
     if not os.path.isdir(config_dir):
-        logger.debug('config.py: No config directory found, creating one')
         # On Windows appdirs always have to be %AppDir%//author//appname so
         # we have to create the author folder first, which would end up being
         # empty on linux systems
         author_dir = os.path.join(user_config_dir(), 'djnrrd')
         if not os.path.isdir(author_dir):
-            logger.debug(f"config.py: Creating author directory: {author_dir}")
             os.mkdir(author_dir)
-        logger.debug(f"config.py: Creating application directory: {config_dir}")
         os.mkdir(config_dir)
     return config_dir
 
@@ -59,7 +56,7 @@ def load_default_config(logger: Logger) -> ConfigParser:
     """
     config = ConfigParser()
     # Check the config directory exists and create if needbe
-    config_dir = check_config_dir(logger)
+    config_dir = check_config_dir()
     config_file = os.path.join(config_dir, 'nrrd-twitch-bot.ini')
     if not os.path.isfile(config_file):
         logger.debug(f"config.py: Config file {config_file} does not exist")
@@ -76,8 +73,34 @@ def save_default_config(config: ConfigParser, logger: Logger) -> None:
     :param config: The ConfigParser object
     :param logger: A Logger object
     """
-    config_dir = check_config_dir(logger)
+    config_dir = check_config_dir()
     config_file = os.path.join(config_dir, 'nrrd-twitch-bot.ini')
     logger.debug(f"config.py: Saving config file: {config_file}")
+    with open(config_file, 'w') as f:
+        config.write(f)
+
+
+def load_config(file_name: str) -> ConfigParser:
+    """Load a config file from the program config directory
+
+    :param file_name: The name of the config file to load
+    :return: The config parser object
+    """
+    config = ConfigParser()
+    # Check the config directory exists and create if needbe
+    config_dir = check_config_dir()
+    config_file = os.path.join(config_dir, file_name)
+    config.read(config_file)
+    return config
+
+
+def save_config(config: ConfigParser, file_name: str) -> None:
+    """Save a config file from the program config directory
+
+    :param config: The ConfigParser object
+    :param file_name: The name of the config file to save
+    """
+    config_dir = check_config_dir()
+    config_file = os.path.join(config_dir, file_name)
     with open(config_file, 'w') as f:
         config.write(f)

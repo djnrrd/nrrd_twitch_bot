@@ -153,7 +153,7 @@ class OptionsWindow(tk.Toplevel):
             self.nametowidget('options_frame.options_list.option_list_lbx')
         self.options_action = \
             self.nametowidget('options_frame.options_action')
-        self.plugins = {k: v for k, v in load_tk_plugins(self.master.logger)}
+        self.plugins = dict(load_tk_plugins(self.master.logger))
         self._load_options_list()
 
     def _setup_app(self) -> None:

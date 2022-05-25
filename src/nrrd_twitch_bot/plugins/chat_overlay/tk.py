@@ -24,7 +24,7 @@ class PluginOptions(tk.Frame):
         self.grid_columnconfigure(1, weight=1)
 
     def _build_form(self) -> None:
-        font_list = [x for x in font.families()]
+        font_list = list(font.families())
         font_label = tk.Label(self, text='Overlay Font',
                               font=('Helvetica', 12, 'bold'))
         font_chooser = ttk.Combobox(self, values=font_list,

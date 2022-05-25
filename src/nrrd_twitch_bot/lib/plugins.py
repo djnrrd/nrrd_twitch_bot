@@ -138,3 +138,28 @@ def load_plugins(logger: Logger) -> List[BasePlugin]:
                                  f"from {load_module}")
                     plugins.append(cls[1](logger))
     return plugins
+
+
+def load_tk_plugins(logger: Logger) -> List[BasePlugin]:
+    """load all plugin objects
+
+    :param logger: A logger object
+    :return: A list of initiated of plugins
+    """
+    _update_paths(logger)
+    modules = _load_from_config(logger)
+    logger.info('plugins.py: Importing plugin TK libraries')
+    plugins = []
+    for module in modules:
+        if importlib.util.find_spec('.tk', module):
+            load_module = importlib.import_module('.tk', module)
+            logger.debug(f"plugins.py: Imported {str(load_module)} "
+                         f"from {module}")
+            for cls in getmembers(load_module, isclass):
+                if cls[1].__module__ == load_module.__name__:
+                    logger.debug(f"plugins.py: Preparing TK plugin {cls[0]} "
+                                 f"from {load_module}")
+                    plugin_name = f"{load_module.__name__.split('.')[0]} " \
+                                  f"{cls[0]}"
+                    plugins.append((plugin_name, cls[1]))
+    return plugins

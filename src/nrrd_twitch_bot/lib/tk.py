@@ -12,6 +12,7 @@ from nrrd_twitch_bot.lib.logger import setup_logger
 from nrrd_twitch_bot.lib.config import load_default_config, save_default_config
 from nrrd_twitch_bot.lib.twitch_oauth import get_twitch_oauth_token
 from nrrd_twitch_bot.run import start_new_thread
+from nrrd_twitch_bot.lib.plugins import load_tk_plugins
 
 
 class TwitchBotLogApp(tk.Tk):
@@ -152,6 +153,7 @@ class OptionsWindow(tk.Toplevel):
             self.nametowidget('options_frame.options_list.option_list_lbx')
         self.options_action = \
             self.nametowidget('options_frame.options_action')
+        self.plugins = {k: v for k, v in load_tk_plugins(self.master.logger)}
         self._load_options_list()
 
     def _setup_app(self) -> None:
@@ -172,6 +174,8 @@ class OptionsWindow(tk.Toplevel):
         """
         self.options_list.insert('end', 'Twitch Login')
         self.options_list.insert('end', 'Test Option')
+        for plugin in self.plugins.keys():
+            self.options_list.insert('end', plugin)
 
     def options_select(self, event: tk.Event) -> None:
         """Load the options section for the selected option
@@ -186,6 +190,8 @@ class OptionsWindow(tk.Toplevel):
                 option_frame = TwitchLogin(logger, self.options_action)
             elif option == 'Test Option':
                 option_frame = TestOption(self.options_action)
+            elif self.plugins.get(option):
+                option_frame = self.plugins[option](logger, self.options_action)
             else:
                 option_frame = tk.Frame()
             option_frame.grid(column=0, row=0, sticky='nsew')

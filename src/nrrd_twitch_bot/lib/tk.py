@@ -173,7 +173,6 @@ class OptionsWindow(tk.Toplevel):
         """Load the options categories in the list box
         """
         self.options_list.insert('end', 'Twitch Login')
-        self.options_list.insert('end', 'Test Option')
         for plugin in self.plugins.keys():
             self.options_list.insert('end', plugin)
 
@@ -371,14 +370,3 @@ class TwitchLogin(tk.Frame):
         self.config['twitch']['client_secret'] = self.twitch_client_secret.get()
         self.config['twitch']['oauth_token'] = self.oauth_token.get()
         save_default_config(self.config, self.logger)
-
-
-class TestOption(tk.Frame):
-    """A holding Frame for further Options Sections
-
-    :param kwargs: List of keyword arguments for a Tk Frame
-    """
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(name='test_option', background='red', *args,
-                         **kwargs)

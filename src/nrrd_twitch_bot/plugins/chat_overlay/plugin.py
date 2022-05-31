@@ -62,6 +62,7 @@ class ChatOverlay(BasePlugin):
         :return: The file to serve through HTTP
         """
         base_path = os.path.join(os.path.dirname(__file__), 'static')
+        config = dict(self.config.items('DEFAULT'))
         if request.match_info['path'] == '' \
                 or request.match_info['path'] == '/' \
                 or request.match_info['path'] == 'index.html':
@@ -70,12 +71,12 @@ class ChatOverlay(BasePlugin):
         if request.match_info['path'] == 'overlay.js':
             header = {'Content-type': 'application/ecmascript'}
             self.logger.debug('chat_overlay.plugin.py: sending Javascript')
-            return FileResponse(path=os.path.join(base_path, 'overlay.js'),
-                                headers=header)
+            jscript_template = self.jinja_env.get_template('overlay.js')
+            jscript_file = jscript_template.render(config=config)
+            return Response(text=jscript_file, headers=header)
         if request.match_info['path'] == 'style.css':
             header = {'Content-type': 'text/css'}
             self.logger.debug('chat_overlay.plugin.py: sending stylesheet')
-            config = dict(self.config.items('DEFAULT'))
             css_template = self.jinja_env.get_template('style.css')
             style_sheet = css_template.render(config=config)
             return Response(text=style_sheet, headers=header)

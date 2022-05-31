@@ -1,3 +1,4 @@
+{% if config.pronoun_option == 'True' %}
 // Create Pronoun lookup objects
 const pronouns_lookup = {};
 const user_pronouns = {};
@@ -101,6 +102,7 @@ async function add_pronouns(chat_msg) {
     }
 }
 
+{% endif %}
 
 function add_chat_msg(chat_msg) {
     // Start with getting the overlay
@@ -118,10 +120,12 @@ function add_chat_msg(chat_msg) {
     name_text = document.createTextNode(`${chat_msg['display-name']}`);
     name_p.appendChild(name_text);
     name_div.appendChild(name_p);
+    {% if config.pronoun_option == 'True' %}
     // Add placeholder for pronouns
     pronoun_p = document.createElement('p');
     pronoun_p.className = 'pronoun_tag';
     name_div.appendChild(pronoun_p);
+    {% endif %}
     msg_div.appendChild(name_div);
     // Main message text
     text_div = document.createElement('div');
@@ -187,7 +191,9 @@ function msg_handler(msg) {
         case "privmsg":
             // Most messages are privmsg
             add_chat_msg(chat_msg);
+            {% if config.pronoun_option == 'True' %}
             add_pronouns(chat_msg);
+            {% endif %}
             clear_out_of_bounds();
             break;
         case "clearchat":

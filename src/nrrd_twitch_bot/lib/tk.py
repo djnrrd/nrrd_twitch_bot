@@ -187,8 +187,6 @@ class OptionsWindow(tk.Toplevel):
             option = event.widget.get(idx)
             if option == 'Twitch Login':
                 option_frame = TwitchLogin(logger, self.options_action)
-            elif option == 'Test Option':
-                option_frame = TestOption(self.options_action)
             elif self.plugins.get(option):
                 option_frame = self.plugins[option](logger, self.options_action)
             else:

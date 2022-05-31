@@ -1,6 +1,5 @@
 """An example tk config object for the OBS chat overlay plugin
 """
-import threading
 from logging import Logger
 import tkinter as tk
 from tkinter import ttk, font
@@ -20,6 +19,7 @@ class PluginOptions(tk.Frame):
         self.chat_font = tk.StringVar()
         self.font_size = tk.StringVar()
         self.font_colour = tk.StringVar()
+        self.badges_option = tk.BooleanVar()
         self.bttv_option = tk.BooleanVar()
         self.pronoun_option = tk.BooleanVar()
         self.pronoun_font = tk.StringVar()
@@ -38,7 +38,8 @@ class PluginOptions(tk.Frame):
         self.grid_rowconfigure(5, weight=0)
         self.grid_rowconfigure(6, weight=0)
         self.grid_rowconfigure(7, weight=0)
-        self.grid_rowconfigure(8, weight=1)
+        self.grid_rowconfigure(8, weight=0)
+        self.grid_rowconfigure(9, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
@@ -63,6 +64,9 @@ class PluginOptions(tk.Frame):
         colour_picker = tk.Button(self, text='Select colour',
                                   command=self._font_colour_chooser,
                                   name='font_colour', state='normal')
+        # Badges options
+        badges_label = tk.Label(self, text='Display badges')
+        badges_option = tk.Checkbutton(self, variable=self.badges_option)
         # BTTV Options
         bttv_label = tk.Label(self, text='Display BTTV emotes')
         bttv_option = tk.Checkbutton(self, variable=self.bttv_option)
@@ -97,16 +101,18 @@ class PluginOptions(tk.Frame):
         colour_label.grid(row=3, column=0, sticky='e', pady=5, padx=5)
         colour_box.grid(row=3, column=1, sticky='w', pady=5, padx=5)
         colour_picker.grid(row=3, column=1, pady=5, padx=5)
-        bttv_label.grid(row=4, column=0, sticky='e', pady=5, padx=5)
-        bttv_option.grid(row=4, column=1, sticky='w', pady=5, padx=5)
-        pronoun_label.grid(row=5, column=0, sticky='e', pady=5, padx=5)
-        pronoun_option.grid(row=5, column=1, sticky='w', pady=5, padx=5)
-        pronoun_font_label.grid(row=6, column=0, sticky='e', pady=5, padx=5)
-        pronoun_font.grid(row=6, column=1, sticky='w', pady=5, padx=5)
-        pronoun_colour_label.grid(row=7, column=0, sticky='e', pady=5, padx=5)
-        pronoun_colour.grid(row=7, column=1, sticky='w', pady=5, padx=5)
-        pronoun_colour_picker.grid(row=7, column=1, pady=5, padx=5)
-        save_config_btn.grid(row=8, column=1, sticky='es', pady=5, padx=5)
+        badges_label.grid(row=4, column=0, sticky='e', pady=5, padx=5)
+        badges_option.grid(row=4, column=1, sticky='w', pady=5, padx=5)
+        bttv_label.grid(row=5, column=0, sticky='e', pady=5, padx=5)
+        bttv_option.grid(row=5, column=1, sticky='w', pady=5, padx=5)
+        pronoun_label.grid(row=6, column=0, sticky='e', pady=5, padx=5)
+        pronoun_option.grid(row=6, column=1, sticky='w', pady=5, padx=5)
+        pronoun_font_label.grid(row=7, column=0, sticky='e', pady=5, padx=5)
+        pronoun_font.grid(row=7, column=1, sticky='w', pady=5, padx=5)
+        pronoun_colour_label.grid(row=8, column=0, sticky='e', pady=5, padx=5)
+        pronoun_colour.grid(row=8, column=1, sticky='w', pady=5, padx=5)
+        pronoun_colour_picker.grid(row=8, column=1, pady=5, padx=5)
+        save_config_btn.grid(row=9, column=1, sticky='es', pady=5, padx=5)
 
     def _save_config_values(self) -> None:
         """Save the Twitch OAuth values to the config file
@@ -115,6 +121,7 @@ class PluginOptions(tk.Frame):
         config['DEFAULT']['chat_font'] = self.chat_font.get()
         config['DEFAULT']['font_size'] = self.font_size.get()
         config['DEFAULT']['font_colour'] = self.font_colour.get()
+        config['DEFAULT']['badges_option'] = str(self.badges_option.get())
         config['DEFAULT']['bttv_option'] = str(self.bttv_option.get())
         config['DEFAULT']['pronoun_option'] = str(self.pronoun_option.get())
         config['DEFAULT']['pronoun_font'] = self.pronoun_font.get()
@@ -128,6 +135,8 @@ class PluginOptions(tk.Frame):
         self.chat_font.set(config['DEFAULT'].get('chat_font', 'Arial'))
         self.font_size.set(config['DEFAULT'].get('font_size', '16px'))
         self.font_colour.set(config['DEFAULT'].get('font_colour', 'white'))
+        self.badges_option.set(eval(config['DEFAULT'].get('badges_option',
+                                                          'True')))
         self.bttv_option.set(eval(config['DEFAULT'].get('bttv_option', 'True')))
         self.pronoun_option.set(eval(config['DEFAULT'].get('pronoun_option',
                                                            'True')))

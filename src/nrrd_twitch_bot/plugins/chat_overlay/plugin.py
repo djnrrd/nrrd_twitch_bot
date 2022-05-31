@@ -7,6 +7,7 @@ from aiohttp.web import Request, Response, FileResponse, StreamResponse, \
     WebSocketResponse
 from jinja2 import Environment, FileSystemLoader
 from nrrd_twitch_bot import BasePlugin, load_config
+from .bttv import AsyncBttv
 
 
 class ChatOverlay(BasePlugin):
@@ -19,6 +20,7 @@ class ChatOverlay(BasePlugin):
         loader = FileSystemLoader(load_path)
         self.jinja_env = Environment(loader=loader)
         self.config = load_config('chat_overlay.ini')
+        self.bttv_cache = {}
 
     async def do_privmsg(self, message: Dict) -> None:
         """Get emotes and pronouns before forwarding the chat message to the
@@ -29,6 +31,10 @@ class ChatOverlay(BasePlugin):
         """
         message['msg_type'] = 'privmsg'
         message = emote_replacement(message)
+        if self.config['DEFAULT'].get('bttv_option', False):
+            if not self.bttv_cache:
+                await self._update_bttv_cache(message.get('room-id'))
+            message = bttv_replacement(message, self.bttv_cache)
         self.logger.debug(f"chat_overlay.plugin.py:  {message}")
         await self.send_web_socket(message)
 
@@ -89,6 +95,14 @@ class ChatOverlay(BasePlugin):
         """
         return await self._websocket_handler(request)
 
+    async def _update_bttv_cache(self, channel_id: str) -> None:
+        """Get the BTTV Emotes for the channel
+
+        :param channel_id: The channel ID as determined from a privmsg tag
+        """
+        async with AsyncBttv() as bttv:
+            self.bttv_cache = await bttv.get_channel_emotes(channel_id)
+
 
 def emote_replacement(message: Dict) -> Dict:
     """Escape HTML characters in the text and identify emotes in a message
@@ -129,4 +143,25 @@ def emote_replacement(message: Dict) -> Dict:
     else:
         # Escape HTML characters in the whole message instead
         message['msg_text'] = escape(message['msg_text'], quote=True)
+    return message
+
+
+def bttv_replacement(message: Dict, bttv_emotes: Dict) -> Dict:
+    """Identify BTTV emotes in a message replacing them with img tags to the
+    emotes on BTTV's CDN
+
+    :param message: The message from the Dispatcher
+    :param bttv_emotes: The cache of BTTV emotes for the channel.
+    :return: The message updated with the IMG tags
+    """
+    emote_set = [(x['code'], x['id']) for x in bttv_emotes['channelEmotes']]
+    emote_set += [(x['code'], x['id']) for x in bttv_emotes['sharedEmotes']]
+    # Make sure that we use the longest emote codes first in case the shorter
+    # ones clash
+    msg_text = message['msg_text']
+    for emote in sorted(emote_set, key=lambda x: len(x[0]), reverse=True):
+        msg_text = msg_text.replace(emote[0],
+                                    f"<img src='https://cdn.betterttv.net/"
+                                    f"emote/{emote[1]}/1x' />")
+    message['msg_text'] = msg_text
     return message

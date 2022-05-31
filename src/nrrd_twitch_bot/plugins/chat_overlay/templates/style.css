@@ -31,11 +31,15 @@ p.slash_me {
   font-style: italic;
 }
 
+{% if config.pronoun_option == 'True' %}
+
 p.pronoun_tag {
   display: inline;
-  font-size: 20px;
+  font-size: 85%;
   font-weight: bold;
-  font-family: "Lucida Console", "Courier New", monospace;
-  color: lightgray;
+  font-family: {{ config.pronoun_font }};
+  color: {{ config.pronoun_colour }};
   margin-left: 5px;
 }
+
+{% endif %}

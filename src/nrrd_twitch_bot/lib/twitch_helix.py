@@ -32,6 +32,26 @@ class TwitchHelix(AsyncBaseWebAPI):
         result = await self._transaction('get', path, params=params)
         return result.get('data')
 
+    async def get_global_badges(self) -> List:
+        """Get the global chat badges from the Titch Helix API
+
+        :return: A list of badges
+        """
+        path ='/helix/chat/badges/global'
+        result = await self._transaction('get', path)
+        return result.get('data')
+
+    async def get_channel_badges(self, broadcaster_id: str) -> List:
+        """Get the chat badges for a specific channel
+
+        :param broadcaster_id: The ID for the channel
+        :return: A list of badges
+        """
+        path = '/helix/chat/badges/'
+        params = {'broadcaster_id': broadcaster_id}
+        result = await self._transaction('get', path, params=params)
+        return result.get('data')
+
 
 async def get_emote_sets(emote_set_ids: List[str], logger: Logger) -> List:
     """Get an emote set from the Twitch Helix API

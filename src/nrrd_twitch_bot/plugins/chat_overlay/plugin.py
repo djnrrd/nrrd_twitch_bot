@@ -5,12 +5,20 @@ import os
 from html import escape
 from aiohttp.web import Request, Response, FileResponse, StreamResponse, \
     WebSocketResponse
-from nrrd_twitch_bot import BasePlugin
+from jinja2 import Environment, FileSystemLoader
+from nrrd_twitch_bot import BasePlugin, load_config
 
 
 class ChatOverlay(BasePlugin):
     """An OBS Overlay for twitch chat
     """
+
+    def __init__(self, logger):
+        super().__init__(logger)
+        load_path = os.path.join(os.path.dirname(__file__), 'templates')
+        loader = FileSystemLoader(load_path)
+        self.jinja_env = Environment(loader=loader)
+        self.config = load_config('chat_overlay.ini')
 
     async def do_privmsg(self, message: Dict) -> None:
         """Get emotes and pronouns before forwarding the chat message to the
@@ -67,8 +75,10 @@ class ChatOverlay(BasePlugin):
         if request.match_info['path'] == 'style.css':
             header = {'Content-type': 'text/css'}
             self.logger.debug('chat_overlay.plugin.py: sending stylesheet')
-            return FileResponse(path=os.path.join(base_path, 'style.css'),
-                                headers=header)
+            config = dict(self.config.items('DEFAULT'))
+            css_template = self.jinja_env.get_template('style.css')
+            style_sheet = css_template.render(config=config)
+            return Response(text=style_sheet, headers=header)
 
     async def websocket_handler(self, request: Request) -> WebSocketResponse:
         """Create a websocket instance for the plugin

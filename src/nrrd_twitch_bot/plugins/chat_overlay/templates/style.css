@@ -14,25 +14,35 @@ p {
   bottom: 10px;
 }
 
-.display_name {
+.user_details {
   padding: 1px;
   margin: 1px;
   display: inline;
 }
-
-.msg_text {
-  margin-top: 5px;
-  margin-bottom: 5px;
-  text-indent: 5px;
+{% if config.chat_style == 'Twitch' %}
+.user_details:after{
+  content: ': ';
+  font-family: {{ config.chat_font }};
+  font-size: {{ config.font_size }};
+  color: {{ config.font_colour }};
+  text-shadow: 1px 1px grey;
 }
+{% endif %}
 
-p.slash_me {
-  font-style: italic;
+{% if config.badges_option == 'True' %}
+.chat_badges {
+  padding: 1px;
+  margin: 1px;
+  display: inline;
+}
+{% endif %}
+
+.display_name {
+  display: inline;
 }
 
 {% if config.pronoun_option == 'True' %}
-
-p.pronoun_tag {
+.pronoun_tag {
   display: inline;
   font-size: 85%;
   font-weight: bold;
@@ -40,15 +50,17 @@ p.pronoun_tag {
   color: {{ config.pronoun_colour }};
   margin-left: 5px;
 }
-
 {% endif %}
 
-{% if config.badges_option == 'True' %}
-
-.chat_badges {
-  padding: 1px;
-  margin: 1px;
+.msg_text {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  text-indent: 5px;
+  {% if config.chat_style == 'Twitch' %}
   display: inline;
+  {% endif %}
 }
 
-{% endif %}
+p.slash_me {
+  font-style: italic;
+}

@@ -78,3 +78,19 @@ async def get_emote_sets(emote_set_ids: List[str], logger: Logger) -> List:
                    emote_set_ids[start_mark:]]
         emote_sets += await asyncio.gather(*futures)
     return emote_sets
+
+
+async def get_channel_badges(broadcaster_id: str, logger: Logger) -> List:
+    """Get global and channel badges from the Twitch Helix API
+
+    :param broadcaster_id: The ID for the channel
+    :param logger: A logger object
+    :return: A list of Badges
+    """
+    config = load_default_config(logger)
+    oauth_token = config['twitch']['oauth_token']
+    client_id = config['twitch']['client_id']
+    async with TwitchHelix(client_id, oauth_token) as twitch:
+        badge_list = twitch.get_global_badges()
+        badge_list += twitch.get_channel_badges(broadcaster_id)
+    return badge_list

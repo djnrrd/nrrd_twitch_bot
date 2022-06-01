@@ -1,12 +1,12 @@
 """An example plugin to provide an OBS chat overlay
 """
-from typing import Dict, Union
+from typing import Dict, Union, List
 import os
 from html import escape
 from aiohttp.web import Request, Response, FileResponse, StreamResponse, \
     WebSocketResponse
 from jinja2 import Environment, FileSystemLoader
-from nrrd_twitch_bot import BasePlugin, load_config
+from nrrd_twitch_bot import BasePlugin, load_config, get_channel_badges
 from .bttv import AsyncBttv
 
 
@@ -21,6 +21,7 @@ class ChatOverlay(BasePlugin):
         self.jinja_env = Environment(loader=loader)
         self.config = load_config('chat_overlay.ini')
         self.bttv_cache = {}
+        self.badges_cache = []
 
     async def do_privmsg(self, message: Dict) -> None:
         """Get emotes and pronouns before forwarding the chat message to the
@@ -31,7 +32,11 @@ class ChatOverlay(BasePlugin):
         """
         message['msg_type'] = 'privmsg'
         message = emote_replacement(message)
-        if self.config['DEFAULT'].get('bttv_option', False):
+        if self.config['DEFAULT'].get('badges_option'):
+            if not self.badges_cache:
+                await self._update_badges_cache()
+            message = badge_replacement(message, self.badges_cache)
+        if self.config['DEFAULT'].get('bttv_option'):
             if not self.bttv_cache:
                 await self._update_bttv_cache(message.get('room-id'))
             message = bttv_replacement(message, self.bttv_cache)
@@ -103,6 +108,15 @@ class ChatOverlay(BasePlugin):
         async with AsyncBttv() as bttv:
             self.bttv_cache = await bttv.get_channel_emotes(channel_id)
 
+    async def _update_badges_cache(self) -> None:
+        """Get the channel badges from the Twitch Helix API
+
+        :return:
+        """
+        broadcaster_id = self.dispatcher.room_state.get('room-id')
+        self.badges_cache = await get_channel_badges(broadcaster_id,
+                                                     self.logger)
+
 
 def emote_replacement(message: Dict) -> Dict:
     """Escape HTML characters in the text and identify emotes in a message
@@ -164,4 +178,31 @@ def bttv_replacement(message: Dict, bttv_emotes: Dict) -> Dict:
                                     f"<img src='https://cdn.betterttv.net/"
                                     f"emote/{emote[1]}/1x' />")
     message['msg_text'] = msg_text
+    return message
+
+
+def badge_replacement(message: Dict, badge_list: List) -> Dict:
+    """Replace badges in the tags with URLs to badge image locations
+
+    :param message: The privmsg from twitch chat
+    :param badge_list: The channel badge list
+    :return: The updated privmsg
+    """
+    badges = message.get('badges', '')
+    badges = badges.split(',')
+    new_badges = []
+    for badge in badges:
+        set_id, badge_id = badge.split('/')
+        badge_set = [x for x in badge_list if x.get('set_id') == set_id]
+        if len(badge_set) > 1:
+            # there was a match in the global set and the channel set. Prefer
+            # the channel set which was after the global set
+            badge_set = badge_set[-1]
+        else:
+            badge_set = badge_set.pop()
+        badge_version = [x for x in badge_set['versions']
+                         if x.get('id') == badge_id]
+        badge_version = badge_version.pop()
+        new_badges.append(badge_version.get('image_url_1x'))
+    message['badges'] = new_badges
     return message

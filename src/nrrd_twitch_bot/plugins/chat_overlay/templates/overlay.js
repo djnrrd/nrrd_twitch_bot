@@ -111,6 +111,17 @@ function add_chat_msg(chat_msg) {
     msg_div = document.createElement('div');
     msg_div.id = chat_msg.id;
     msg_div.className = `chat_message ${chat_msg.id}`;
+    {% if config.badges_option == 'True' %}
+    // Add badges
+    badges_div = document.createElement('div');
+    badges_div.className = 'chat_badges';
+    for (badge_url of chat_msg.badges) {
+        badge_img = document.createElement('img');
+        badge_img.setAttribute('src', badge_url);
+        badges_div.appendChild(badge_img);
+    }
+    msg_div.appendChild(badges_div);
+    {% endif %}
     // Add the Username
     name_div = document.createElement('div');
     name_div.className = 'display_name';

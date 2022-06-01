@@ -7,8 +7,6 @@ body {
 p {
   font-weight: bold;
   text-shadow: 1px 1px grey;
-  padding: 1px;
-  margin: 1px;
 }
 
 #chat_overlay {
@@ -22,9 +20,10 @@ p {
   display: inline;
 }
 
-p.msg_text {
-  margin-top: 10px;
-  margin-bottom: 10px;
+.msg_text {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  text-indent: 5px;
 }
 
 p.slash_me {
@@ -40,6 +39,16 @@ p.pronoun_tag {
   font-family: {{ config.pronoun_font }};
   color: {{ config.pronoun_colour }};
   margin-left: 5px;
+}
+
+{% endif %}
+
+{% if config.badges_option == 'True' %}
+
+.chat_badges {
+  padding: 1px;
+  margin: 1px;
+  display: inline;
 }
 
 {% endif %}

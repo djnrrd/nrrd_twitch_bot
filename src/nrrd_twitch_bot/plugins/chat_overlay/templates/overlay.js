@@ -118,6 +118,7 @@ function add_chat_msg(chat_msg) {
     for (badge_url of chat_msg.badges) {
         badge_img = document.createElement('img');
         badge_img.setAttribute('src', badge_url);
+        badge_img.setAttribute('class', 'chat_badges');
         badges_div.appendChild(badge_img);
     }
     msg_div.appendChild(badges_div);

@@ -111,6 +111,8 @@ function add_chat_msg(chat_msg) {
     msg_div = document.createElement('div');
     msg_div.id = chat_msg.id;
     msg_div.className = `chat_message ${chat_msg.id}`;
+    user_div = document.createElement('div');
+    user_div.className = 'user_details';
     {% if config.badges_option == 'True' %}
     // Add badges
     badges_div = document.createElement('div');
@@ -121,24 +123,22 @@ function add_chat_msg(chat_msg) {
         badge_img.setAttribute('class', 'chat_badges');
         badges_div.appendChild(badge_img);
     }
-    msg_div.appendChild(badges_div);
+    user_div.appendChild(badges_div);
     {% endif %}
     // Add the Username
-    name_div = document.createElement('div');
-    name_div.className = 'display_name';
     name_p = document.createElement('p');
     name_p.className = 'display_name';
     name_p.style = `color:${chat_msg.color}`;
     name_text = document.createTextNode(`${chat_msg['display-name']}`);
     name_p.appendChild(name_text);
-    name_div.appendChild(name_p);
+    user_div.appendChild(name_p);
     {% if config.pronoun_option == 'True' %}
     // Add placeholder for pronouns
     pronoun_p = document.createElement('p');
     pronoun_p.className = 'pronoun_tag';
-    name_div.appendChild(pronoun_p);
+    user_div.appendChild(pronoun_p);
     {% endif %}
-    msg_div.appendChild(name_div);
+    msg_div.appendChild(user_div);
     // Main message text
     text_div = document.createElement('div');
     text_div.className = 'msg_text';

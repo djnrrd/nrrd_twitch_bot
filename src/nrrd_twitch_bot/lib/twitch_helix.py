@@ -91,6 +91,6 @@ async def get_channel_badges(broadcaster_id: str, logger: Logger) -> List:
     oauth_token = config['twitch']['oauth_token']
     client_id = config['twitch']['client_id']
     async with TwitchHelix(client_id, oauth_token) as twitch:
-        badge_list = twitch.get_global_badges()
-        badge_list += twitch.get_channel_badges(broadcaster_id)
+        badge_list = await twitch.get_global_badges()
+        badge_list += await twitch.get_channel_badges(broadcaster_id)
     return badge_list

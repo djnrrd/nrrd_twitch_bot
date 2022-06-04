@@ -12,13 +12,31 @@ p {
 #chat_overlay {
   position: absolute;
   bottom: 10px;
+  width: 100%;
 }
+
+{% if config.chat_style == '2 Columns' %}
+.chat_message {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+}
+{% endif %}
 
 .user_details {
   padding: 1px;
   margin: 1px;
+  {% if config.chat_style == '2 Columns' %}
+  flex-basis: 50%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: right;
+  {% else %}
   display: inline;
+  {% endif %}
 }
+
 {% if config.chat_style == 'Twitch' %}
 .user_details:after{
   content: ': ';
@@ -58,6 +76,8 @@ p {
   text-indent: 5px;
   {% if config.chat_style == 'Twitch' %}
   display: inline;
+  {% elif config.chat_style == '2 Columns' %}
+  flex-basis: 50%;
   {% endif %}
 }
 

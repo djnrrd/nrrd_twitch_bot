@@ -16,6 +16,7 @@ class PluginOptions(tk.Frame):
     def __init__(self, logger: Logger, *args, **kwargs) -> None:
         super().__init__(name='chat_overlay', *args, **kwargs)
         self.logger = logger
+        self.chat_style = tk.StringVar()
         self.chat_font = tk.StringVar()
         self.font_size = tk.StringVar()
         self.font_colour = tk.StringVar()
@@ -39,7 +40,8 @@ class PluginOptions(tk.Frame):
         self.grid_rowconfigure(6, weight=0)
         self.grid_rowconfigure(7, weight=0)
         self.grid_rowconfigure(8, weight=0)
-        self.grid_rowconfigure(9, weight=1)
+        self.grid_rowconfigure(9, weight=0)
+        self.grid_rowconfigure(10, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
@@ -47,6 +49,11 @@ class PluginOptions(tk.Frame):
         # Header
         header_label = tk.Label(self, text='Chat Overlay Options',
                                 font=('Helvetica', 12, 'bold'))
+        # Theme selection
+        style_list = ['Default Nrrd', 'Twitch', '2 Columns', 'Boxes']
+        style_label = tk.Label(self, text='Chat Theme')
+        style_chooser = ttk.Combobox(self, values=style_list,
+                                     textvariable=self.chat_style)
         # Default Font
         font_list = list(font.families())
         font_list.sort()
@@ -94,25 +101,27 @@ class PluginOptions(tk.Frame):
                                     name='save_config', state='normal')
         # Grid layouts
         header_label.grid(row=0, columnspan=2, sticky='new', pady=5)
-        font_label.grid(row=1, column=0, sticky='se', pady=5, padx=5)
-        font_chooser.grid(row=1, column=1, sticky='sw', pady=5, padx=5)
-        size_label.grid(row=2, column=0, sticky='e', pady=5, padx=5)
-        size_chooser.grid(row=2, column=1, sticky='w', pady=5, padx=5)
-        colour_label.grid(row=3, column=0, sticky='e', pady=5, padx=5)
-        colour_box.grid(row=3, column=1, sticky='w', pady=5, padx=5)
-        colour_picker.grid(row=3, column=1, pady=5, padx=5)
-        badges_label.grid(row=4, column=0, sticky='e', pady=5, padx=5)
-        badges_option.grid(row=4, column=1, sticky='w', pady=5, padx=5)
-        bttv_label.grid(row=5, column=0, sticky='e', pady=5, padx=5)
-        bttv_option.grid(row=5, column=1, sticky='w', pady=5, padx=5)
-        pronoun_label.grid(row=6, column=0, sticky='e', pady=5, padx=5)
-        pronoun_option.grid(row=6, column=1, sticky='w', pady=5, padx=5)
-        pronoun_font_label.grid(row=7, column=0, sticky='e', pady=5, padx=5)
-        pronoun_font.grid(row=7, column=1, sticky='w', pady=5, padx=5)
-        pronoun_colour_label.grid(row=8, column=0, sticky='e', pady=5, padx=5)
-        pronoun_colour.grid(row=8, column=1, sticky='w', pady=5, padx=5)
-        pronoun_colour_picker.grid(row=8, column=1, pady=5, padx=5)
-        save_config_btn.grid(row=9, column=1, sticky='es', pady=5, padx=5)
+        style_label.grid(row=1, column=0, sticky='se', pady=5, padx=5)
+        style_chooser.grid(row=1, column=1, sticky='sw', pady=5, padx=5)
+        font_label.grid(row=2, column=0, sticky='se', pady=5, padx=5)
+        font_chooser.grid(row=2, column=1, sticky='sw', pady=5, padx=5)
+        size_label.grid(row=3, column=0, sticky='e', pady=5, padx=5)
+        size_chooser.grid(row=3, column=1, sticky='w', pady=5, padx=5)
+        colour_label.grid(row=4, column=0, sticky='e', pady=5, padx=5)
+        colour_box.grid(row=4, column=1, sticky='w', pady=5, padx=5)
+        colour_picker.grid(row=4, column=1, pady=5, padx=5)
+        badges_label.grid(row=5, column=0, sticky='e', pady=5, padx=5)
+        badges_option.grid(row=5, column=1, sticky='w', pady=5, padx=5)
+        bttv_label.grid(row=6, column=0, sticky='e', pady=5, padx=5)
+        bttv_option.grid(row=6, column=1, sticky='w', pady=5, padx=5)
+        pronoun_label.grid(row=7, column=0, sticky='e', pady=5, padx=5)
+        pronoun_option.grid(row=7, column=1, sticky='w', pady=5, padx=5)
+        pronoun_font_label.grid(row=8, column=0, sticky='e', pady=5, padx=5)
+        pronoun_font.grid(row=8, column=1, sticky='w', pady=5, padx=5)
+        pronoun_colour_label.grid(row=9, column=0, sticky='e', pady=5, padx=5)
+        pronoun_colour.grid(row=9, column=1, sticky='w', pady=5, padx=5)
+        pronoun_colour_picker.grid(row=9, column=1, pady=5, padx=5)
+        save_config_btn.grid(row=10, column=1, sticky='es', pady=5, padx=5)
 
     def _save_config_values(self) -> None:
         """Save the Twitch OAuth values to the config file
@@ -126,6 +135,7 @@ class PluginOptions(tk.Frame):
         config['DEFAULT']['pronoun_option'] = str(self.pronoun_option.get())
         config['DEFAULT']['pronoun_font'] = self.pronoun_font.get()
         config['DEFAULT']['pronoun_colour'] = self.pronoun_colour.get()
+        config['DEFAULT']['chat_style'] = self.chat_style.get()
         save_config(config, 'chat_overlay.ini')
 
     def _load_config_values(self) -> None:
@@ -144,6 +154,7 @@ class PluginOptions(tk.Frame):
                                                     'Courier New'))
         self.pronoun_colour.set(config['DEFAULT'].get('pronoun_colour',
                                                       'lightgray'))
+        self.chat_style.set(config['DEFAULT'].get('chat_style', 'Default Nrrd'))
 
     def _font_colour_chooser(self) -> None:
         colour = askcolor(title='Default Font Colour')

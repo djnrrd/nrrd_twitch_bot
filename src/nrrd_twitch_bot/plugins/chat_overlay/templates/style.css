@@ -15,17 +15,26 @@ p {
   width: 100%;
 }
 
-{% if config.chat_style == '2 Columns' %}
+
 .chat_message {
-  display: flex;
   width: 100%;
+{% if config.chat_style == '2 Columns' %}
+  display: flex;
   align-items: baseline;
-}
 {% endif %}
+{% if config.chat_style == 'Boxes' %}
+  background-image: linear-gradient(rgba(20, 20, 20, 0.8), rgba(60, 60, 60, 0.8));
+  border-radius: 10px;
+  padding: 2px;
+  margin: 2px;
+{% endif %}
+}
+
 
 .user_details {
   padding: 1px;
   margin: 1px;
+  width: 100%;
   {% if config.chat_style == '2 Columns' %}
   flex-basis: 50%;
   text-overflow: ellipsis;
@@ -33,6 +42,9 @@ p {
   overflow: hidden;
   text-align: right;
   {% else %}
+  position: relative;
+  {% endif %}
+  {% if config.chat_style == 'Twitch' %}
   display: inline;
   {% endif %}
 }
@@ -47,6 +59,15 @@ p {
 }
 {% endif %}
 
+{% if config.chat_style == 'Boxes' %}
+div.chat_badges{
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin-right: 5px;
+}
+{% endif %}
+
 {% if config.badges_option == 'True' %}
 .chat_badges {
   padding: 1px;
@@ -57,12 +78,19 @@ p {
 
 .display_name {
   display: inline;
+{% if config.chat_style == 'Boxes' %}
+  font-size: 60%;
+{% endif %}
 }
 
 {% if config.pronoun_option == 'True' %}
 .pronoun_tag {
   display: inline;
+{% if config.chat_style == 'Boxes' %}
+  font-size: 55%;
+{% else %}
   font-size: 85%;
+{% endif %}
   font-weight: bold;
   font-family: {{ config.pronoun_font }};
   color: {{ config.pronoun_colour }};

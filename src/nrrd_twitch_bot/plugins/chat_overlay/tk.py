@@ -33,6 +33,8 @@ class PluginOptions(tk.Frame):
         self._enable_pronoun_options()
 
     def _setup_app(self) -> None:
+        """Setup te grid
+        """
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=0)
         self.grid_rowconfigure(2, weight=0)
@@ -50,6 +52,8 @@ class PluginOptions(tk.Frame):
         self.grid_columnconfigure(1, weight=1)
 
     def _build_form(self) -> None:
+        """Build all the form elements
+        """
         # Header
         header_label = tk.Label(self, text='Chat Overlay Options',
                                 font=('Helvetica', 12, 'bold'))
@@ -182,14 +186,17 @@ class PluginOptions(tk.Frame):
         self.custom_css_path.set(config['DEFAULT'].get('custom_css_path', ''))
 
     def _font_colour_chooser(self) -> None:
+        """Launch a colour picker for the main Font"""
         colour = askcolor(title='Default Font Colour')
         self.font_colour.set(colour[1])
 
     def _pronoun_colour_chooser(self) -> None:
+        """Launch a colour picker for the pronoun Font"""
         colour = askcolor(title='Pronoun Font Colour')
         self.pronoun_colour.set(colour[1])
 
     def _css_file_chooser(self) -> None:
+        """Launch a file picker for custom CSS"""
         filetypes = (('CSS files', '*.css'), ('All files', '*.*'))
         self.custom_css_path.set(
             filedialog.askopenfilename(title='Select CSS File',
@@ -197,6 +204,7 @@ class PluginOptions(tk.Frame):
         )
 
     def _enable_pronoun_options(self) -> None:
+        """Enable widgets related to the Pronoun options"""
         pronoun_widgets = [x for x in self.children if 'pronoun' in x]
         if self.pronoun_option.get():
             for widget_name in pronoun_widgets:
@@ -206,6 +214,7 @@ class PluginOptions(tk.Frame):
                 self.nametowidget(widget_name).config(state='disabled')
 
     def _enable_css_options(self) -> None:
+        """Enable widgets related to the customer CSS options"""
         css_widgets = [x for x in self.children if 'css' in x]
         if self.custom_css.get():
             for widget_name in css_widgets:

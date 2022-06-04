@@ -88,9 +88,13 @@ class ChatOverlay(BasePlugin):
         if request.match_info['path'] == 'style.css':
             header = {'Content-type': 'text/css'}
             self.logger.debug('chat_overlay.plugin.py: sending stylesheet')
-            css_template = self.jinja_env.get_template('style.css')
-            style_sheet = css_template.render(config=config)
-            return Response(text=style_sheet, headers=header)
+            if config.get('custom_css') == 'True':
+                css_file = config.get('custom_css_path')
+                return FileResponse(path=css_file)
+            else:
+                css_template = self.jinja_env.get_template('style.css')
+                style_sheet = css_template.render(config=config)
+                return Response(text=style_sheet, headers=header)
 
     async def websocket_handler(self, request: Request) -> WebSocketResponse:
         """Create a websocket instance for the plugin

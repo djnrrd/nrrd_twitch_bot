@@ -2,7 +2,7 @@
 """
 from logging import Logger
 import tkinter as tk
-from tkinter import ttk, font
+from tkinter import ttk, font, filedialog
 from tkinter.colorchooser import askcolor
 from nrrd_twitch_bot import load_config, save_config
 
@@ -25,6 +25,8 @@ class PluginOptions(tk.Frame):
         self.pronoun_option = tk.BooleanVar()
         self.pronoun_font = tk.StringVar()
         self.pronoun_colour = tk.StringVar()
+        self.custom_css = tk.BooleanVar()
+        self.custom_css_path = tk.StringVar()
         self._setup_app()
         self._build_form()
         self._load_config_values()
@@ -41,7 +43,9 @@ class PluginOptions(tk.Frame):
         self.grid_rowconfigure(7, weight=0)
         self.grid_rowconfigure(8, weight=0)
         self.grid_rowconfigure(9, weight=0)
-        self.grid_rowconfigure(10, weight=1)
+        self.grid_rowconfigure(10, weight=0)
+        self.grid_rowconfigure(11, weight=0)
+        self.grid_rowconfigure(12, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
@@ -95,6 +99,19 @@ class PluginOptions(tk.Frame):
                                           command=self._pronoun_colour_chooser,
                                           name='pronoun_colour_picker',
                                           state='normal')
+        # Custom CSS option
+        custom_css_label = tk.Label(self, text='Use custom CSS file (ignores '
+                                               'style settings above)')
+        custom_css_option = tk.Checkbutton(self, variable=self.custom_css,
+                                           command=self._enable_css_options)
+        # Custom CSS File chooser
+        css_file_label = tk.Label(self, text='Select custom CSS file',
+                                  name='css_file_lbl')
+        css_file_picker = tk.Button(self, text='Select File...',
+                                    command=self._css_file_chooser,
+                                    name='css_file_btn', state='normal')
+
+
         # Save Button
         save_config_btn = tk.Button(self, text='Save',
                                     command=self._save_config_values,
@@ -121,7 +138,11 @@ class PluginOptions(tk.Frame):
         pronoun_colour_label.grid(row=9, column=0, sticky='e', pady=5, padx=5)
         pronoun_colour.grid(row=9, column=1, sticky='w', pady=5, padx=5)
         pronoun_colour_picker.grid(row=9, column=1, pady=5, padx=5)
-        save_config_btn.grid(row=10, column=1, sticky='es', pady=5, padx=5)
+        custom_css_label.grid(row=10, column=0, sticky='e', pady=5, padx=5)
+        custom_css_option.grid(row=10, column=1, sticky='w', pady=5, padx=5)
+        css_file_label.grid(row=11, column=0, sticky='e', pady=5, padx=5)
+        css_file_picker.grid(row=11, column=1, sticky='w', pady=5, padx=5)
+        save_config_btn.grid(row=12, column=1, sticky='es', pady=5, padx=5)
 
     def _save_config_values(self) -> None:
         """Save the Twitch OAuth values to the config file
@@ -136,6 +157,8 @@ class PluginOptions(tk.Frame):
         config['DEFAULT']['pronoun_font'] = self.pronoun_font.get()
         config['DEFAULT']['pronoun_colour'] = self.pronoun_colour.get()
         config['DEFAULT']['chat_style'] = self.chat_style.get()
+        config['DEFAULT']['custom_css'] = str(self.custom_css.get())
+        config['DEFAULT']['custom_css_path'] = self.custom_css_path.get()
         save_config(config, 'chat_overlay.ini')
 
     def _load_config_values(self) -> None:
@@ -155,6 +178,8 @@ class PluginOptions(tk.Frame):
         self.pronoun_colour.set(config['DEFAULT'].get('pronoun_colour',
                                                       'lightgray'))
         self.chat_style.set(config['DEFAULT'].get('chat_style', 'Default Nrrd'))
+        self.custom_css.set(eval(config['DEFAULT'].get('custom_css', 'False')))
+        self.custom_css_path.set(config['DEFAULT'].get('custom_css_path', ''))
 
     def _font_colour_chooser(self) -> None:
         colour = askcolor(title='Default Font Colour')
@@ -164,6 +189,13 @@ class PluginOptions(tk.Frame):
         colour = askcolor(title='Pronoun Font Colour')
         self.pronoun_colour.set(colour[1])
 
+    def _css_file_chooser(self) -> None:
+        filetypes = (('CSS files', '*.css'), ('All files', '*.*'))
+        self.custom_css_path.set(
+            filedialog.askopenfilename(title='Select CSS File',
+                                       filetypes=filetypes)
+        )
+
     def _enable_pronoun_options(self) -> None:
         pronoun_widgets = [x for x in self.children if 'pronoun' in x]
         if self.pronoun_option.get():
@@ -171,4 +203,13 @@ class PluginOptions(tk.Frame):
                 self.nametowidget(widget_name).config(state='normal')
         else:
             for widget_name in pronoun_widgets:
+                self.nametowidget(widget_name).config(state='disabled')
+
+    def _enable_css_options(self) -> None:
+        css_widgets = [x for x in self.children if 'css' in x]
+        if self.custom_css.get():
+            for widget_name in css_widgets:
+                self.nametowidget(widget_name).config(state='normal')
+        else:
+            for widget_name in css_widgets:
                 self.nametowidget(widget_name).config(state='disabled')

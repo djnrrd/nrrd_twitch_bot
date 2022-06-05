@@ -7,7 +7,7 @@ from tkinter.colorchooser import askcolor
 from nrrd_twitch_bot import load_config, save_config
 
 
-class PluginOptions(tk.Frame):
+class PluginOptions(ttk.Frame):
     """A holding Frame for further Options Sections
 
     :param kwargs: List of keyword arguments for a Tk Frame
@@ -16,6 +16,19 @@ class PluginOptions(tk.Frame):
     def __init__(self, logger: Logger, *args, **kwargs) -> None:
         super().__init__(name='chat_overlay', *args, **kwargs)
         self.logger = logger
+        canvas = tk.Canvas(self)
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.scrollable_frame = ttk.Frame(canvas)
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
         self.chat_style = tk.StringVar()
         self.chat_font = tk.StringVar()
         self.font_size = tk.StringVar()
@@ -31,122 +44,161 @@ class PluginOptions(tk.Frame):
         self._build_form()
         self._load_config_values()
         self._enable_pronoun_options()
+        self._enable_css_options()
 
     def _setup_app(self) -> None:
         """Setup te grid
         """
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=0)
-        self.grid_rowconfigure(2, weight=0)
-        self.grid_rowconfigure(3, weight=0)
-        self.grid_rowconfigure(4, weight=0)
-        self.grid_rowconfigure(5, weight=0)
-        self.grid_rowconfigure(6, weight=0)
-        self.grid_rowconfigure(7, weight=0)
-        self.grid_rowconfigure(8, weight=0)
-        self.grid_rowconfigure(9, weight=0)
-        self.grid_rowconfigure(10, weight=0)
-        self.grid_rowconfigure(11, weight=0)
-        self.grid_rowconfigure(12, weight=1)
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
+        self.scrollable_frame.grid_rowconfigure(0, weight=1)
+        self.scrollable_frame.grid_rowconfigure(1, weight=0)
+        self.scrollable_frame.grid_rowconfigure(2, weight=0)
+        self.scrollable_frame.grid_rowconfigure(3, weight=0)
+        self.scrollable_frame.grid_rowconfigure(4, weight=0)
+        self.scrollable_frame.grid_rowconfigure(5, weight=0)
+        self.scrollable_frame.grid_rowconfigure(6, weight=0)
+        self.scrollable_frame.grid_rowconfigure(7, weight=0)
+        self.scrollable_frame.grid_rowconfigure(8, weight=0)
+        self.scrollable_frame.grid_rowconfigure(9, weight=0)
+        self.scrollable_frame.grid_rowconfigure(10, weight=0)
+        self.scrollable_frame.grid_rowconfigure(11, weight=0)
+        self.scrollable_frame.grid_rowconfigure(12, weight=0)
+        self.scrollable_frame.grid_rowconfigure(13, weight=1)
+        self.scrollable_frame.grid_columnconfigure(0, weight=0)
+        self.scrollable_frame.grid_columnconfigure(1, weight=1)
+        self.scrollable_frame.grid_columnconfigure(2, weight=0)
 
     def _build_form(self) -> None:
         """Build all the form elements
         """
         # Header
-        header_label = tk.Label(self, text='Chat Overlay Options',
+        header_label = tk.Label(self.scrollable_frame,
+                                text='Chat Overlay Options',
                                 font=('Helvetica', 12, 'bold'))
         # Theme selection
         style_list = ['Default Nrrd', 'Twitch', '2 Columns', 'Boxes']
-        style_label = tk.Label(self, text='Chat Theme')
-        style_chooser = ttk.Combobox(self, values=style_list,
+        style_label = tk.Label(self.scrollable_frame, text='Chat Theme',
+                               wraplength=250)
+        style_chooser = ttk.Combobox(self.scrollable_frame, values=style_list,
                                      textvariable=self.chat_style)
         # Default Font
         font_list = list(font.families())
         font_list.sort()
-        font_label = tk.Label(self, text='Overlay Font')
-        font_chooser = ttk.Combobox(self, values=font_list,
+        font_label = tk.Label(self.scrollable_frame, text='Overlay Font',
+                              wraplength=250)
+        font_chooser = ttk.Combobox(self.scrollable_frame, values=font_list,
                                     textvariable=self.chat_font)
         # Default Font Size
         font_sizes = ['16px', '20px', '24px', '28px', '32px', '36px', '40px']
-        size_label = tk.Label(self, text='Default font size')
-        size_chooser = ttk.Combobox(self, values=font_sizes,
+        size_label = tk.Label(self.scrollable_frame, text='Default font size',
+                              wraplength=250)
+        size_chooser = ttk.Combobox(self.scrollable_frame, values=font_sizes,
                                     textvariable=self.font_size)
         # Colour chooser
-        colour_label = tk.Label(self, text='Default font colour')
-        colour_box = tk.Entry(self, textvariable=self.font_colour)
-        colour_picker = tk.Button(self, text='Select colour',
+        colour_label = tk.Label(self.scrollable_frame,
+                                text='Default font colour', wraplength=250)
+        colour_box = tk.Entry(self.scrollable_frame,
+                              textvariable=self.font_colour)
+        colour_picker = tk.Button(self.scrollable_frame, text='Select colour',
                                   command=self._font_colour_chooser,
                                   name='font_colour', state='normal')
         # Badges options
-        badges_label = tk.Label(self, text='Display badges')
-        badges_option = tk.Checkbutton(self, variable=self.badges_option)
+        badges_label = tk.Label(self.scrollable_frame, text='Display badges',
+                                wraplength=250)
+        badges_option = tk.Checkbutton(self.scrollable_frame,
+                                       variable=self.badges_option)
         # BTTV Options
-        bttv_label = tk.Label(self, text='Display BTTV emotes')
-        bttv_option = tk.Checkbutton(self, variable=self.bttv_option)
+        bttv_label = tk.Label(self.scrollable_frame, text='Display BTTV emotes',
+                              wraplength=250)
+        bttv_option = tk.Checkbutton(self.scrollable_frame,
+                                     variable=self.bttv_option)
         # Pronouns options
-        pronoun_label = tk.Label(self, text='Display alejo.io pronouns')
-        pronoun_option = tk.Checkbutton(self, variable=self.pronoun_option,
+        pronoun_label = tk.Label(self.scrollable_frame,
+                                 text='Display alejo.io pronouns',
+                                 wraplength=250)
+        pronoun_option = tk.Checkbutton(self.scrollable_frame,
+                                        variable=self.pronoun_option,
                                         command=self._enable_pronoun_options)
         # Pronouns font
-        pronoun_font_label = tk.Label(self, text='Pronoun font',
-                                      name='pronoun_font_lbl')
-        pronoun_font = ttk.Combobox(self, values=font_list, name='pronoun_font',
+        pronoun_font_label = tk.Label(self.scrollable_frame,
+                                      text='Pronoun font',
+                                      name='pronoun_font_lbl', wraplength=250)
+        pronoun_font = ttk.Combobox(self.scrollable_frame, values=font_list,
+                                    name='pronoun_font',
                                     textvariable=self.pronoun_font)
         # pronouns colour
-        pronoun_colour_label = tk.Label(self, text='Pronoun colour',
-                                        name='pronoun_colour_lbl')
-        pronoun_colour = tk.Entry(self, textvariable=self.pronoun_colour,
+        pronoun_colour_label = tk.Label(self.scrollable_frame,
+                                        text='Pronoun colour',
+                                        name='pronoun_colour_lbl',
+                                        wraplength=250)
+        pronoun_colour = tk.Entry(self.scrollable_frame,
+                                  textvariable=self.pronoun_colour,
                                   name='pronoun_colour')
-        pronoun_colour_picker = tk.Button(self, text='Select colour',
+        pronoun_colour_picker = tk.Button(self.scrollable_frame,
+                                          text='Select colour',
                                           command=self._pronoun_colour_chooser,
                                           name='pronoun_colour_picker',
                                           state='normal')
         # Custom CSS option
-        custom_css_label = tk.Label(self, text='Use custom CSS file (ignores '
-                                               'style settings above)')
-        custom_css_option = tk.Checkbutton(self, variable=self.custom_css,
+        custom_css_label = tk.Label(self.scrollable_frame,
+                                    text='Use custom CSS file (ignores style '
+                                         'settings above)', wraplength=250)
+        custom_css_option = tk.Checkbutton(self.scrollable_frame,
+                                           variable=self.custom_css,
                                            command=self._enable_css_options)
         # Custom CSS File chooser
-        css_file_label = tk.Label(self, text='Select custom CSS file',
-                                  name='css_file_lbl')
-        css_file_picker = tk.Button(self, text='Select File...',
+        css_file_label = tk.Label(self.scrollable_frame,
+                                  text='Select custom CSS file',
+                                  name='css_file_lbl', wraplength=250)
+        css_file_picker = tk.Button(self.scrollable_frame,
+                                    text='Select File...',
                                     command=self._css_file_chooser,
                                     name='css_file_btn', state='normal')
-
-
+        css_chosen_file_label = tk.Label(self.scrollable_frame,
+                                         textvariable=self.custom_css_path,
+                                         name='css_chosen_file_lbl',
+                                         wraplength=250)
         # Save Button
-        save_config_btn = tk.Button(self, text='Save',
+        save_config_btn = tk.Button(self.scrollable_frame, text='Save',
                                     command=self._save_config_values,
                                     name='save_config', state='normal')
         # Grid layouts
-        header_label.grid(row=0, columnspan=2, sticky='new', pady=5)
+        header_label.grid(row=0, columnspan=3, sticky='new', pady=5)
         style_label.grid(row=1, column=0, sticky='se', pady=5, padx=5)
-        style_chooser.grid(row=1, column=1, sticky='sw', pady=5, padx=5)
+        style_chooser.grid(row=1, column=1, columnspan=2, sticky='sw', pady=5,
+                           padx=5)
         font_label.grid(row=2, column=0, sticky='se', pady=5, padx=5)
-        font_chooser.grid(row=2, column=1, sticky='sw', pady=5, padx=5)
+        font_chooser.grid(row=2, column=1, columnspan=2, sticky='sw', pady=5,
+                          padx=5)
         size_label.grid(row=3, column=0, sticky='e', pady=5, padx=5)
-        size_chooser.grid(row=3, column=1, sticky='w', pady=5, padx=5)
+        size_chooser.grid(row=3, column=1, columnspan=2, sticky='w', pady=5,
+                          padx=5)
         colour_label.grid(row=4, column=0, sticky='e', pady=5, padx=5)
         colour_box.grid(row=4, column=1, sticky='w', pady=5, padx=5)
-        colour_picker.grid(row=4, column=1, pady=5, padx=5)
+        colour_picker.grid(row=4, column=2, sticky='w', pady=5, padx=5)
         badges_label.grid(row=5, column=0, sticky='e', pady=5, padx=5)
-        badges_option.grid(row=5, column=1, sticky='w', pady=5, padx=5)
+        badges_option.grid(row=5, column=1, columnspan=2, sticky='w', pady=5,
+                           padx=5)
         bttv_label.grid(row=6, column=0, sticky='e', pady=5, padx=5)
-        bttv_option.grid(row=6, column=1, sticky='w', pady=5, padx=5)
+        bttv_option.grid(row=6, column=1, columnspan=2, sticky='w', pady=5,
+                         padx=5)
         pronoun_label.grid(row=7, column=0, sticky='e', pady=5, padx=5)
-        pronoun_option.grid(row=7, column=1, sticky='w', pady=5, padx=5)
+        pronoun_option.grid(row=7, column=1, columnspan=2, sticky='w', pady=5,
+                            padx=5)
         pronoun_font_label.grid(row=8, column=0, sticky='e', pady=5, padx=5)
-        pronoun_font.grid(row=8, column=1, sticky='w', pady=5, padx=5)
+        pronoun_font.grid(row=8, column=1, columnspan=2, sticky='w', pady=5,
+                          padx=5)
         pronoun_colour_label.grid(row=9, column=0, sticky='e', pady=5, padx=5)
         pronoun_colour.grid(row=9, column=1, sticky='w', pady=5, padx=5)
-        pronoun_colour_picker.grid(row=9, column=1, pady=5, padx=5)
+        pronoun_colour_picker.grid(row=9, column=2, sticky='w', pady=5, padx=5)
         custom_css_label.grid(row=10, column=0, sticky='e', pady=5, padx=5)
-        custom_css_option.grid(row=10, column=1, sticky='w', pady=5, padx=5)
+        custom_css_option.grid(row=10, column=1, columnspan=2, sticky='w',
+                               pady=5, padx=5)
         css_file_label.grid(row=11, column=0, sticky='e', pady=5, padx=5)
-        css_file_picker.grid(row=11, column=1, sticky='w', pady=5, padx=5)
-        save_config_btn.grid(row=12, column=1, sticky='es', pady=5, padx=5)
+        css_file_picker.grid(row=11, column=1, columnspan=2, sticky='w',
+                             pady=5, padx=5)
+        css_chosen_file_label.grid(row=12, column=1, columnspan=2,
+                                   sticky='w', pady=5, padx=5)
+        save_config_btn.grid(row=13, column=2, sticky='es', pady=5, padx=5)
 
     def _save_config_values(self) -> None:
         """Save the Twitch OAuth values to the config file
@@ -205,20 +257,23 @@ class PluginOptions(tk.Frame):
 
     def _enable_pronoun_options(self) -> None:
         """Enable widgets related to the Pronoun options"""
-        pronoun_widgets = [x for x in self.children if 'pronoun' in x]
+        pronoun_widgets = [(x, y) for x, y in
+                           self.scrollable_frame.children.items()
+                           if 'pronoun' in x]
         if self.pronoun_option.get():
-            for widget_name in pronoun_widgets:
-                self.nametowidget(widget_name).config(state='normal')
+            for widget in pronoun_widgets:
+                widget[1].config(state='normal')
         else:
-            for widget_name in pronoun_widgets:
-                self.nametowidget(widget_name).config(state='disabled')
+            for widget in pronoun_widgets:
+                widget[1].config(state='disabled')
 
     def _enable_css_options(self) -> None:
         """Enable widgets related to the customer CSS options"""
-        css_widgets = [x for x in self.children if 'css' in x]
+        css_widgets = [(x, y) for x, y in self.scrollable_frame.children.items()
+                       if 'css' in x]
         if self.custom_css.get():
-            for widget_name in css_widgets:
-                self.nametowidget(widget_name).config(state='normal')
+            for widget in css_widgets:
+                widget[1].config(state='normal')
         else:
-            for widget_name in css_widgets:
-                self.nametowidget(widget_name).config(state='disabled')
+            for widget in css_widgets:
+                widget[1].config(state='disabled')

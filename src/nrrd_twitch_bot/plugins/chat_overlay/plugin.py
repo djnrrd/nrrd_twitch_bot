@@ -193,20 +193,21 @@ def badge_replacement(message: Dict, badge_list: List) -> Dict:
     :return: The updated privmsg
     """
     badges = message.get('badges', '')
-    badges = badges.split(',')
-    new_badges = []
-    for badge in badges:
-        set_id, badge_id = badge.split('/')
-        badge_set = [x for x in badge_list if x.get('set_id') == set_id]
-        if len(badge_set) > 1:
-            # there was a match in the global set and the channel set. Prefer
-            # the channel set which was after the global set
-            badge_set = badge_set[-1]
-        else:
-            badge_set = badge_set.pop()
-        badge_version = [x for x in badge_set['versions']
-                         if x.get('id') == badge_id]
-        badge_version = badge_version.pop()
-        new_badges.append(badge_version.get('image_url_1x'))
-    message['badges'] = new_badges
+    if badges:
+        badges = badges.split(',')
+        new_badges = []
+        for badge in badges:
+            set_id, badge_id = badge.split('/')
+            badge_set = [x for x in badge_list if x.get('set_id') == set_id]
+            if len(badge_set) > 1:
+                # there was a match in the global set and the channel set.
+                # Prefer the channel set which was after the global set
+                badge_set = badge_set[-1]
+            else:
+                badge_set = badge_set.pop()
+            badge_version = [x for x in badge_set['versions']
+                             if x.get('id') == badge_id]
+            badge_version = badge_version.pop()
+            new_badges.append(badge_version.get('image_url_1x'))
+        message['badges'] = new_badges
     return message

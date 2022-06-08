@@ -167,6 +167,8 @@ function clear_out_of_bounds() {
         console.log(chat_overlay.getBoundingClientRect().y);
         chat_messages = chat_overlay.getElementsByClassName("chat_message");
         chat_overlay.removeChild(chat_messages[0]);
+        // Check again, just in case a couple of messages have tripped over
+        clear_out_of_bounds();
     }
 }
 

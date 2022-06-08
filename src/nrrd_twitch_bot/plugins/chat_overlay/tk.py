@@ -34,6 +34,7 @@ class PluginOptions(ttk.Frame):
         self.font_size = tk.StringVar()
         self.font_colour = tk.StringVar()
         self.badges_option = tk.BooleanVar()
+        self.timeout_option = tk.IntVar()
         self.bttv_option = tk.BooleanVar()
         self.pronoun_option = tk.BooleanVar()
         self.pronoun_font = tk.StringVar()
@@ -47,7 +48,7 @@ class PluginOptions(ttk.Frame):
         self._enable_css_options()
 
     def _setup_app(self) -> None:
-        """Setup te grid
+        """Setup the grid
         """
         self.scrollable_frame.grid_rowconfigure(0, weight=1)
         self.scrollable_frame.grid_rowconfigure(1, weight=0)
@@ -62,7 +63,8 @@ class PluginOptions(ttk.Frame):
         self.scrollable_frame.grid_rowconfigure(10, weight=0)
         self.scrollable_frame.grid_rowconfigure(11, weight=0)
         self.scrollable_frame.grid_rowconfigure(12, weight=0)
-        self.scrollable_frame.grid_rowconfigure(13, weight=1)
+        self.scrollable_frame.grid_rowconfigure(13, weight=0)
+        self.scrollable_frame.grid_rowconfigure(14, weight=1)
         self.scrollable_frame.grid_columnconfigure(0, weight=0)
         self.scrollable_frame.grid_columnconfigure(1, weight=1)
         self.scrollable_frame.grid_columnconfigure(2, weight=0)
@@ -106,6 +108,12 @@ class PluginOptions(ttk.Frame):
                                 wraplength=250)
         badges_option = tk.Checkbutton(self.scrollable_frame,
                                        variable=self.badges_option)
+        # Chat timeout options
+        timeout_label = tk.Label(self.scrollable_frame,
+                                 text='Hide messages after: (Seconds. Leave '
+                                      'as 0 to disable)', wraplength=250)
+        timeout_option = tk.Entry(self.scrollable_frame,
+                                  textvariable=self.timeout_option)
         # BTTV Options
         bttv_label = tk.Label(self.scrollable_frame, text='Display BTTV emotes',
                               wraplength=250)
@@ -178,27 +186,29 @@ class PluginOptions(ttk.Frame):
         badges_label.grid(row=5, column=0, sticky='e', pady=5, padx=5)
         badges_option.grid(row=5, column=1, columnspan=2, sticky='w', pady=5,
                            padx=5)
-        bttv_label.grid(row=6, column=0, sticky='e', pady=5, padx=5)
-        bttv_option.grid(row=6, column=1, columnspan=2, sticky='w', pady=5,
-                         padx=5)
-        pronoun_label.grid(row=7, column=0, sticky='e', pady=5, padx=5)
-        pronoun_option.grid(row=7, column=1, columnspan=2, sticky='w', pady=5,
+        timeout_label.grid(row=6, column=0, sticky='e', pady=5, padx=5)
+        timeout_option.grid(row=6, column=1, columnspan=2, sticky='w', pady=5,
                             padx=5)
-        pronoun_font_label.grid(row=8, column=0, sticky='e', pady=5, padx=5)
-        pronoun_font.grid(row=8, column=1, columnspan=2, sticky='w', pady=5,
-                          padx=5)
-        pronoun_colour_label.grid(row=9, column=0, sticky='e', pady=5, padx=5)
-        pronoun_colour.grid(row=9, column=1, sticky='w', pady=5, padx=5)
-        pronoun_colour_picker.grid(row=9, column=2, sticky='w', pady=5, padx=5)
-        custom_css_label.grid(row=10, column=0, sticky='e', pady=5, padx=5)
-        custom_css_option.grid(row=10, column=1, columnspan=2, sticky='w',
+        bttv_label.grid(row=7, column=0, sticky='e', pady=5, padx=5)
+        bttv_option.grid(row=7, column=1, columnspan=2, sticky='w', pady=5,
+                         padx=5)
+        pronoun_label.grid(row=8, column=0, sticky='e', pady=5, padx=5)
+        pronoun_option.grid(row=8, column=1, columnspan=2, sticky='w', pady=5,
+                            padx=5)
+        pronoun_font_label.grid(row=9, column=0, sticky='e', pady=5, padx=5)
+        pronoun_font.grid(row=9, column=1, sticky='w', pady=5, padx=5)
+        pronoun_colour_label.grid(row=10, column=0, sticky='e', pady=5, padx=5)
+        pronoun_colour.grid(row=10, column=1, sticky='w',pady=5, padx=5)
+        pronoun_colour_picker.grid(row=10, column=2, sticky='w', pady=5, padx=5)
+        custom_css_label.grid(row=11, column=0, sticky='e', pady=5, padx=5)
+        custom_css_option.grid(row=11, column=1, columnspan=2, sticky='w',
                                pady=5, padx=5)
-        css_file_label.grid(row=11, column=0, sticky='e', pady=5, padx=5)
-        css_file_picker.grid(row=11, column=1, columnspan=2, sticky='w',
+        css_file_label.grid(row=12, column=0, sticky='e', pady=5, padx=5)
+        css_file_picker.grid(row=12, column=1, columnspan=2, sticky='w',
                              pady=5, padx=5)
-        css_chosen_file_label.grid(row=12, column=1, columnspan=2,
+        css_chosen_file_label.grid(row=13, column=1, columnspan=2,
                                    sticky='w', pady=5, padx=5)
-        save_config_btn.grid(row=13, column=2, sticky='es', pady=5, padx=5)
+        save_config_btn.grid(row=14, column=2, sticky='es', pady=5, padx=5)
 
     def _save_config_values(self) -> None:
         """Save the Twitch OAuth values to the config file
@@ -208,6 +218,7 @@ class PluginOptions(ttk.Frame):
         config['DEFAULT']['font_size'] = self.font_size.get()
         config['DEFAULT']['font_colour'] = self.font_colour.get()
         config['DEFAULT']['badges_option'] = str(self.badges_option.get())
+        config['DEFAULT']['timeout_message'] = str(self.timeout_option.get())
         config['DEFAULT']['bttv_option'] = str(self.bttv_option.get())
         config['DEFAULT']['pronoun_option'] = str(self.pronoun_option.get())
         config['DEFAULT']['pronoun_font'] = self.pronoun_font.get()
@@ -226,6 +237,8 @@ class PluginOptions(ttk.Frame):
         self.font_colour.set(config['DEFAULT'].get('font_colour', 'white'))
         self.badges_option.set(eval(config['DEFAULT'].get('badges_option',
                                                           'True')))
+        self.timeout_option.set(int(config['DEFAULT'].get('timeout_message',
+                                                          '0')))
         self.bttv_option.set(eval(config['DEFAULT'].get('bttv_option', 'True')))
         self.pronoun_option.set(eval(config['DEFAULT'].get('pronoun_option',
                                                            'True')))

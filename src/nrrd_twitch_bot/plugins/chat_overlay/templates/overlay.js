@@ -197,6 +197,17 @@ function delete_individual_message(chat_msg) {
 }
 
 
+{% if (config.timeout_message|int) > 0 %}
+async function timeout_message(chat_msg, timeout_period) {
+    // wait for an amount of time before removing
+    timeout_period = timeout_period * 1000;
+    await new Promise(r => setTimeout(r, timeout_period));
+    const chat_box = document.getElementById(chat_msg.id);
+    chat_box.parentNode.removeChild(chat_box);
+}
+{% endif %}
+
+
 function msg_handler(msg) {
     // Main message handler function called from the Websockets client
     console.log(`[message] Data received from server: ${msg.data}`);
@@ -209,6 +220,9 @@ function msg_handler(msg) {
             add_pronouns(chat_msg);
             {% endif %}
             clear_out_of_bounds();
+            {% if (config.timeout_message|int) > 0 %}
+            timeout_message(chat_msg, {{ config.timeout_message|int }});
+            {% endif %}
             break;
         case "clearchat":
             // Clear the entire chat log

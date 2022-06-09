@@ -31,7 +31,10 @@ class ChatCommands(BasePlugin):
         args = parts[1:]
         self.logger.debug(f"chat_commands: command {command} received with "
                           f"args {args}")
-        response = self.chat_commands(command, *args)
+        if command == 'command':
+            response = self.manage_commands(*args)
+        else:
+            response = self.lookup_commands(command, *args)
         if response:
             self.logger.debug(f"chat_commands: response is {response}")
             asyncio.create_task(self.dispatcher.chat_send(response))
@@ -56,10 +59,11 @@ class ChatCommands(BasePlugin):
             load_db.execute(init_index)
         return load_db
 
-    def chat_commands(self, command: str, *args) -> Union[str, None]:
+    def lookup_commands(self, command: str, *args) -> Union[str, None]:
         """Return the response to the chat commands
 
-        :param command: the extracted command
+        :param command: The extracted command
+        :param args: The list of arguments
         :return: The command response if found
         """
         with self.db_conn as con:
@@ -70,3 +74,26 @@ class ChatCommands(BasePlugin):
                 self.logger.debug(f"chat_commands: Found entry for {command} "
                                   f"in sqlite3 dB")
                 return result[0][0].format(*args)
+
+    def manage_commands(self, *args) -> Union[str, None]:
+        """Add or delete commands to the database
+
+        :param args: The list of arguments to the 'command' command
+        :return: The command response
+        """
+        if len(args) >= 2:
+            if args[0] == 'add':
+                if len(args) >= 3:
+                    command = args[1]
+                    response = ' '.join(args[2:])
+                    with self.db_conn as con:
+                        con.execute('INSERT INTO chat_commands VALUES (?, ?);',
+                                    (command, response))
+                    return f"Added command {command}"
+            elif args[0] == 'delete':
+                command = args[1]
+                with self.db_conn as con:
+                    con.execute('DELETE FROM chat_commands WHERE command = ?;',
+                                (command, ))
+                return f"Deleted command {command}"
+        return 'Usage: !command add|delete command_name {response}'
